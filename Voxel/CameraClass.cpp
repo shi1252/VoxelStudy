@@ -38,6 +38,13 @@ XMFLOAT3 CameraClass::forward()
 	return forward;
 }
 
+XMFLOAT3 CameraClass::right()
+{
+	XMFLOAT3 right;
+	XMStoreFloat3(&right, XMVector4Transform(XMVectorSet(1.f, 0.f, 0.f, 0.f), XMMatrixRotationRollPitchYaw(XMConvertToRadians(rotation.x), XMConvertToRadians(rotation.y), XMConvertToRadians(rotation.z))));
+	return right;
+}
+
 void CameraClass::Render()
 {
 	XMVECTOR up, pos, target;
@@ -45,7 +52,7 @@ void CameraClass::Render()
 
 	up = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 	pos = XMLoadFloat3(&position);
-	target = XMVectorSet(0.f, -1.f, 1.f, 0.f);
+	target = XMVectorSet(0.f, 0.f, 1.f, 0.f);
 
 	rotMat = XMMatrixRotationRollPitchYaw(XMConvertToRadians(rotation.x), XMConvertToRadians(rotation.y), XMConvertToRadians(rotation.z));
 

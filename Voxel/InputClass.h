@@ -1,28 +1,44 @@
 #pragma once
-//#include <dinput.h>
+#include "Defined.h"
+#include <dinput.h>
+
 class InputClass
 {
 public:
+	enum MState
+	{
+		LEFT = 0,
+		RIGHT,
+		MID
+	};
+
 	InputClass() = default;
 	InputClass(const InputClass&) = delete;
 	~InputClass() = default;
 
-	void Initialize();
-	bool IsKeyDown(int vKeyCode);
+	bool IsKeyDown(unsigned char keyCode);
 
-//	bool Initialize(HINSTANCE hInstance, HWND hWnd, int width, int height);
-//	void Shutdown();
-//	bool Frame();
-//
-//	bool IsEscapePressed();
-//	void GetMouseLocation(int& x, int& y);
-//
-//private:
-//	bool ReadKeyboard();
-//	bool ReadMouse();
-//	void ProcessInput();
-//
-//	IDirectInput8* directInput = nullptr;
-//	IDirectInputDevice8* keyboard = nullptr;
-//	IDirectInputDevice8* mouse = nullptr;
+	bool Initialize(HINSTANCE hInstance, HWND hWnd, int width, int height);
+	void Shutdown();
+	bool Frame();
+
+	void GetMouseLocation(int& x, int& y);
+	void GetMouseDelta(int& x, int& y);
+	bool GetMouseButtonState(MState button);
+private:
+	bool ReadKeyboard();
+	bool ReadMouse();
+	void ProcessInput();
+
+	unsigned char keyboardState[256] = { 0, };
+	DIMOUSESTATE mouseState;
+
+	int width;
+	int height;
+	int mouseX;
+	int mouseY;
+
+	IDirectInput8* directInput = nullptr;
+	IDirectInputDevice8* keyboard = nullptr;
+	IDirectInputDevice8* mouse = nullptr;
 };

@@ -3,6 +3,8 @@
 #include <vector>
 #include <unordered_map>
 
+class Ray3D;
+
 struct VoxelVertex
 {
 	float threshold = 0.f;
@@ -30,7 +32,7 @@ struct hash_fn
 	}
 };
 
-class TextureClass;
+class TargaTextureClass;
 
 class Voxel
 {
@@ -65,10 +67,14 @@ public:
 
 	ID3D11ShaderResourceView* GetTexture();
 
+	XMFLOAT3* GetChunkBounds();
 	VoxelData& GetVoxelData(XMFLOAT3 pos);
 	float GetVoxelVertex(XMUINT3 pos);
 	void SetVoxel(XMUINT3 pos, UINT bitFlag, float threshold = 0.5f);
+	void SetVoxelSphere(XMFLOAT3 pos, float radius, bool draw);
 	void SetVoxelVertex(XMUINT3 pos, float threshold = 0.5f);
+
+	bool RayCast(Ray3D& ray, XMFLOAT3& out);
 
 private:
 	float InterpThreshold(const float& t0, const float& t1);
@@ -77,6 +83,7 @@ private:
 	VertexType VertexInterp(const XMUINT3& v0, const int edge, float threshold0);
 	unsigned char GetVoxelBitFlag(XMUINT3 pos);
 	void GetVoxelIA(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices);
+	XMUINT3 WorldPositionToLocalIndex(const XMFLOAT3& position);
 	//bool LoadVoxelToBuffers(VertexType *vertices, int *indices);
 
 	bool InitializeBuffers(ID3D11Device* device);
@@ -90,14 +97,16 @@ private:
 	std::vector<VoxelVertex> voxelVertices;
 	std::unordered_map<XMUINT3, VoxelData, hash_fn> voxels;
 	XMUINT3 chunkSize;
+	XMFLOAT3 chunkBounds[2];
 	float cellSize;
 	XMFLOAT3 position;
 
+	ID3D11Device* device = nullptr;
 	ID3D11Buffer* vb = nullptr;
 	ID3D11Buffer* ib = nullptr;
 	int vCount = 0;
 	int iCount = 0;
 	bool dirtyFlag = false;
 
-	TextureClass* texture = nullptr;
+	TargaTextureClass* texture = nullptr;
 };

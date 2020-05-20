@@ -2,7 +2,7 @@
 #include "Defined.h"
 #include "AlignedAllocationPolicy.h"
 
-class TextureClass;
+class TargaTextureClass;
 
 class ModelClass : public AlignedAllocationPolicy<16>
 {
@@ -37,5 +37,5 @@ private:
 	ID3D11Buffer* ib = nullptr;
 	int vCount = 0;
 	int iCount = 0;
-	TextureClass* texture = nullptr;
+	TargaTextureClass* texture = nullptr;
 };

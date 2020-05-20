@@ -16,6 +16,7 @@ public:
 	XMFLOAT3 GetRotation();
 
 	XMFLOAT3 forward();
+	XMFLOAT3 right();
 
 	void Render();
 	void GetViewMatrix(XMMATRIX& view);

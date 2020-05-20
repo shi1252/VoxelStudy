@@ -1,6 +1,8 @@
 #include "Voxel.h"
-#include "TextureClass.h"
+#include "TargaTextureClass.h"
 #include "PerlinNoise.h"
+#include "Ray3D.h"
+#include "MathHelper.h"
 #include <math.h>
 
 #pragma region Lookup Table
@@ -310,6 +312,10 @@ int triTable[256][16] = { {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -
 Voxel::Voxel(XMFLOAT3 pos, XMUINT3 chunkSize, float cellSize)
 	: position(pos), chunkSize(chunkSize), cellSize(cellSize)
 {
+	chunkBounds[0] = position;
+	chunkBounds[1] = XMFLOAT3(position.x + chunkSize.x * cellSize, 
+		position.y + chunkSize.y * cellSize,
+		position.z + chunkSize.z * cellSize);
 	PerlinNoise perlin;
 	voxelVertices.resize((chunkSize.x + 1) * (chunkSize.y + 1) * (chunkSize.z + 1));
 	for (int z = 0; z < chunkSize.z + 1; ++z)
@@ -321,15 +327,25 @@ Voxel::Voxel(XMFLOAT3 pos, XMUINT3 chunkSize, float cellSize)
 				voxelVertices[x + y * (chunkSize.x + 1) + z * (chunkSize.x + 1) * (chunkSize.y + 1)] = VoxelVertex();
 				//if (x < chunkSize.x && y < chunkSize.y && z < chunkSize.z)
 				//	voxels[XMFLOAT3(x, y, z)] = VoxelData();
-				float noise = perlin.Noise((double)x / (chunkSize.x + 1) * 0.8, (double)z / (chunkSize.z + 1) * 0.8, 0.1)* (chunkSize.y + 1);
-				if (y < noise)
-				{
-					if ((noise - y) >= 1.f)
-						voxelVertices[VertexPositionToArrayKey(XMUINT3(x, y, z))].threshold = 1.f;
-					else
-						voxelVertices[VertexPositionToArrayKey(XMUINT3(x, y, z))].threshold = (noise - y);
-				}
-					
+				//float noise = perlin.Noise((double)x / (chunkSize.x + 1) * 0.8, (double)z / (chunkSize.z + 1) * 0.8, 0.1)* (chunkSize.y + 1);
+				//if (y < noise)
+				//{
+				//	if ((noise - y) >= 1.f)
+				//		voxelVertices[VertexPositionToArrayKey(XMUINT3(x, y, z))].threshold = 1.f;
+				//	else
+				//		voxelVertices[VertexPositionToArrayKey(XMUINT3(x, y, z))].threshold = (noise - y);
+				//}
+			}
+		}
+	}
+
+	for (int x = 0; x < chunkSize.x; ++x)
+	{
+		for (int y = 0; y < chunkSize.y / 2.f; ++y)
+		{
+			for (int z = 0; z < chunkSize.z; ++z)
+			{
+				SetVoxelVertex(XMUINT3(x, y, z));
 			}
 		}
 	}
@@ -373,6 +389,11 @@ ID3D11ShaderResourceView* Voxel::GetTexture()
 	return texture->GetTexture();
 }
 
+XMFLOAT3* Voxel::GetChunkBounds()
+{
+	return chunkBounds;
+}
+
 float Voxel::GetVoxelVertex(XMUINT3 pos)
 {
 	return voxelVertices[VertexPositionToArrayKey(pos)].threshold;
@@ -388,6 +409,43 @@ void Voxel::SetVoxel(XMUINT3 pos, UINT bitFlag, float threshold)
 	}
 }
 
+void Voxel::SetVoxelSphere(XMFLOAT3 pos, float radius, bool draw)
+{
+	XMUINT3 index = WorldPositionToLocalIndex(pos);
+	if (index.x == -1)
+		return;
+
+	for (int z = MathHelper::Clamp(index.z - (radius / cellSize - 1), 0.f, (float)chunkSize.z);
+		z < MathHelper::Clamp(index.z + (radius / cellSize + 1), 0.f, (float)chunkSize.z); ++z)
+	{
+		for (int y = MathHelper::Clamp(index.y - (radius / cellSize - 1), 0.f, (float)chunkSize.y);
+			y < MathHelper::Clamp(index.y + (radius / cellSize + 1), 0.f, (float)chunkSize.y); ++y)
+		{
+			for (int x = MathHelper::Clamp(index.x - (radius / cellSize - 1), 0.f, (float)chunkSize.x);
+				x < MathHelper::Clamp(index.x + (radius / cellSize + 1), 0.f, (float)chunkSize.x); ++x)
+			{
+				XMFLOAT3 targetPos = XMFLOAT3(pos.x + ((int)index.x - x) * cellSize, pos.y + ((int)index.y - y) * cellSize, pos.z + ((int)index.z - z) * cellSize);
+				float distance = XMVector3Length(XMVectorSubtract(XMLoadFloat3(&pos), XMLoadFloat3(&targetPos))).m128_f32[0];
+
+				XMUINT3 newPos = XMUINT3(x, y, z);
+				if (!draw && GetVoxelVertex(newPos) <= 0.f)
+				{
+					continue;
+				}
+				if (distance > radius)
+				{
+					if ((distance - radius) <= cellSize)
+						SetVoxelVertex(newPos, (distance - radius) / cellSize);
+				}
+				else
+				{
+					SetVoxelVertex(newPos, (draw ? 1.f : 0.f));
+				}
+			}
+		}
+	}
+}
+
 void Voxel::SetVoxelVertex(XMUINT3 pos, float threshold)
 {
 	voxelVertices[pos.x + pos.y * (chunkSize.x + 1) + 
@@ -396,14 +454,94 @@ void Voxel::SetVoxelVertex(XMUINT3 pos, float threshold)
 	dirtyFlag = true;
 }
 
+bool IsEqual(const XMUINT3& lhs, const XMUINT3& rhs)
+{
+	return (lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
+}
+
+bool Voxel::RayCast(Ray3D& ray, XMFLOAT3 &out)
+{
+	XMFLOAT3 minPos, maxPos;
+	if (!ray.IntersectWithCube(chunkBounds, minPos, maxPos))
+		return false;
+
+	int stepX = (ray.direction.x >= 0) ? 1 : -1;
+	int stepY = (ray.direction.y >= 0) ? 1 : -1;
+	int stepZ = (ray.direction.z >= 0) ? 1 : -1;
+
+	minPos = XMFLOAT3(minPos.x + cellSize * stepX / 2.f, minPos.y + cellSize * stepY / 2.f, minPos.z + cellSize * stepZ / 2.f);
+	maxPos = XMFLOAT3(maxPos.x - cellSize * stepX / 2.f, maxPos.y - cellSize * stepY / 2.f, maxPos.z - cellSize * stepZ / 2.f);
+
+	XMUINT3 current = WorldPositionToLocalIndex(minPos);
+	XMUINT3 last = WorldPositionToLocalIndex(maxPos);
+
+	if (current.x == -1 || last.x == -1)
+		return false;
+
+	float next_voxel_boundry_x = (minPos.x + stepX * cellSize);
+	float next_voxel_boundry_y = (minPos.y + stepY * cellSize);
+	float next_voxel_boundry_z = (minPos.z + stepZ * cellSize);
+
+	float tMaxX = (ray.direction.x != 0) ? (next_voxel_boundry_x - ray.origin.x) / ray.direction.x : FLT_MAX;
+	float tMaxY = (ray.direction.y != 0) ? (next_voxel_boundry_y - ray.origin.y) / ray.direction.y : FLT_MAX;
+	float tMaxZ = (ray.direction.z != 0) ? (next_voxel_boundry_z - ray.origin.z) / ray.direction.z : FLT_MAX;
+
+	float tDeltaX = (ray.direction.x != 0) ? cellSize / ray.direction.x * stepX : FLT_MAX;
+	float tDeltaY = (ray.direction.y != 0) ? cellSize / ray.direction.y * stepY : FLT_MAX;
+	float tDeltaZ = (ray.direction.z != 0) ? cellSize / ray.direction.z * stepZ : FLT_MAX;
+
+	while (!IsEqual(last, current))
+	{
+		if (current.x == -1 || current.y == -1 || current.z == -1)
+			break;
+		if (tMaxX < tMaxY)
+		{
+			if (tMaxX < tMaxZ)
+			{
+				current.x += stepX;
+				tMaxX += tDeltaX;
+			}
+			else
+			{
+				current.z += stepZ;
+				tMaxZ += tDeltaZ;
+			}
+		}
+		else
+		{
+			if (tMaxY < tMaxZ)
+			{
+				current.y += stepY;
+				tMaxY += tDeltaY;
+			}
+			else
+			{
+				current.z += stepZ;
+				tMaxZ += tDeltaZ;
+			}
+		}
+
+		unsigned char bitFlag = GetVoxelBitFlag(current);
+		if (bitFlag != 0 && bitFlag != 255)
+		{
+			out = XMFLOAT3(this->position.x + current.x * cellSize + cellSize / 2.f,
+				this->position.y + current.y * cellSize + cellSize / 2.f,
+				this->position.z + current.z * cellSize + cellSize / 2.f);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 float Voxel::InterpThreshold(const float& t0, const float& t1)
 {
 	if ((t1 - t0) < FLT_EPSILON)
 		return 0.5f;
 	if (t0 < FLT_EPSILON)
-		return t1;
+		return (1.f - t1);
 	else
-		return (1.f - t0);
+		return (t0);
 }
 
 XMUINT3 Voxel::GetVoxelVertexPosition(const XMUINT3& pos, UCHAR vertexNumber)
@@ -446,9 +584,9 @@ unsigned char Voxel::GetVoxelBitFlag(XMUINT3 pos)
 /// <param name='indices'>out</param>
 void Voxel::GetVoxelIA(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices)
 {
-		for (int y = 0; y < chunkSize.y; ++y)
-	{
 	for (int z = 0; z < chunkSize.z; ++z)
+	{
+		for (int y = 0; y < chunkSize.y; ++y)
 		{
 			for (int x = 0; x < chunkSize.x; ++x)
 			{
@@ -486,8 +624,23 @@ void Voxel::GetVoxelIA(std::vector<Voxel::VertexType>& vertices, std::vector<int
 	}
 }
 
+XMUINT3 Voxel::WorldPositionToLocalIndex(const XMFLOAT3& position)
+{
+	if ((position.x < this->position.x || (position.x >= (this->position.x + chunkSize.x * cellSize)))
+		|| (position.y < this->position.y || (position.y >= (this->position.y + chunkSize.y * cellSize)))
+		|| (position.z < this->position.z || (position.z >= (this->position.z + chunkSize.z * cellSize))))
+		return XMUINT3(-1, -1, -1);
+
+	return XMUINT3((position.x - this->position.x) / cellSize, 
+		(position.y - this->position.y) / cellSize,
+		(position.z - this->position.z) / cellSize);
+}
+
 bool Voxel::InitializeBuffers(ID3D11Device* device)
 {
+	if (!this->device)
+		this->device = device;
+
 	// Maximum triangle count is 5 for each voxel
 	std::vector<Voxel::VertexType> vertices;
 	std::vector<int> indices;
@@ -549,11 +702,9 @@ bool Voxel::InitializeBuffers(ID3D11Device* device)
 
 bool Voxel::UpdateBuffers(ID3D11DeviceContext* context)
 {
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	ShutdownBuffers();
 
-	//if (FAILED())
-
-	return false;
+	return InitializeBuffers(device);
 }
 
 void Voxel::ShutdownBuffers()
@@ -576,11 +727,11 @@ void Voxel::ShutdownBuffers()
 void Voxel::RenderBuffers(ID3D11DeviceContext* context)
 {
 	// if voxel data changed then update buffer before render
-	//if (dirtyFlag)
-	//{
-	//	dirtyFlag = false;
-	//	if (!UpdateBuffers(context)) return;
-	//}
+	if (dirtyFlag)
+	{
+		dirtyFlag = false;
+		if (!UpdateBuffers(context)) return;
+	}
 
 	// Set stride and offset of vertex buffer
 	UINT stride = sizeof(VertexType);
@@ -599,7 +750,7 @@ void Voxel::RenderBuffers(ID3D11DeviceContext* context)
 bool Voxel::LoadTexture(ID3D11Device* device, ID3D11DeviceContext* context, LPCSTR fileName)
 {
 	// Create texture object
-	texture = new TextureClass;
+	texture = new TargaTextureClass;
 	if (!texture)
 		return false;
 

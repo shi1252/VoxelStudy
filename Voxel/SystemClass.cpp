@@ -4,6 +4,8 @@
 #include "InputClass.h"
 #include "D3DClass.h"
 #include "CameraClass.h"
+#include "Ray3D.h"
+#include "Voxel.h"
 
 SystemClass::SystemClass(HINSTANCE h)
 {
@@ -24,7 +26,11 @@ bool SystemClass::Initialize()
 	if (!input)
 		return false;
 
-	input->Initialize();
+	if (!input->Initialize(hInstance, hWnd, width, height))
+	{
+		MessageBox(hWnd, L"Could not initialize input object.", L"Error", MB_OK);
+		return false;
+	}
 
 	graphics = new GraphicsClass;
 	if (!graphics)
@@ -44,6 +50,7 @@ void SystemClass::Shutdown()
 
 	if (input)
 	{
+		input->Shutdown();
 		delete input;
 		input = nullptr;
 	}
@@ -70,33 +77,14 @@ void SystemClass::Run()
 		}
 		else
 		{
-			CameraClass *cam = graphics->GetCamera();
-			float movespeed = 5.f;
-			if (input->IsKeyDown('X'))
-				cam->SetPosition(cam->GetPosition().x + cam->forward().x * movespeed * timer.DeltaTime(),
-					cam->GetPosition().y + cam->forward().y * movespeed * timer.DeltaTime(),
-					cam->GetPosition().z + cam->forward().z * movespeed * timer.DeltaTime());
-			if (input->IsKeyDown('W'))
-				cam->SetPosition(cam->GetPosition().x, cam->GetPosition().y + movespeed * timer.DeltaTime(), cam->GetPosition().z);
-			if (input->IsKeyDown('S'))
-				cam->SetPosition(cam->GetPosition().x, cam->GetPosition().y - movespeed * timer.DeltaTime(), cam->GetPosition().z);
-			if (input->IsKeyDown('A'))
-				cam->SetPosition(cam->GetPosition().x - movespeed * timer.DeltaTime(), cam->GetPosition().y, cam->GetPosition().z);
-			if (input->IsKeyDown('D'))
-				cam->SetPosition(cam->GetPosition().x + movespeed * timer.DeltaTime(), cam->GetPosition().y, cam->GetPosition().z);
-			if (input->IsKeyDown('Q'))
-				cam->SetPosition(cam->GetPosition().x, cam->GetPosition().y, cam->GetPosition().z + movespeed * timer.DeltaTime());
-			if (input->IsKeyDown('E'))
-				cam->SetPosition(cam->GetPosition().x, cam->GetPosition().y, cam->GetPosition().z - movespeed * timer.DeltaTime());
-			if (input->IsKeyDown('Z'))
-				cam->SetRotation(cam->GetRotation().x, cam->GetRotation().y - 180.f * timer.DeltaTime(), cam->GetRotation().z);
-			if (input->IsKeyDown('C'))
-				cam->SetRotation(cam->GetRotation().x, cam->GetRotation().y + 180.f * timer.DeltaTime(), cam->GetRotation().z);
 			timer.Tick();
 
 			if (!Frame())
 				break;
 		}
+
+		if (input->IsKeyDown(DIK_ESCAPE))
+			break;
 	}
 }
 
@@ -205,10 +193,66 @@ LRESULT SystemClass::MsgProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 bool SystemClass::Frame()
 {
-	if (input->IsKeyDown(VK_ESCAPE))
+	if (!input->Frame())
 		return false;
 
-	return graphics->Frame();
+	int mouseX = 0, mouseY = 0;
+	input->GetMouseLocation(mouseX, mouseY);
+
+	if (!graphics->Frame(mouseX, mouseY))
+		return false;
+
+#pragma region CameraControl
+	CameraClass* cam = graphics->GetCamera();
+	cam->Render();
+	float movespeed = 5.f;
+	if (input->IsKeyDown(DIK_LSHIFT))
+		movespeed = 10.f;
+	if (input->IsKeyDown(DIK_W))
+		cam->SetPosition(cam->GetPosition().x + cam->forward().x * movespeed * timer.DeltaTime(),
+			cam->GetPosition().y + cam->forward().y * movespeed * timer.DeltaTime(),
+			cam->GetPosition().z + cam->forward().z * movespeed * timer.DeltaTime());
+	if (input->IsKeyDown(DIK_S))
+		cam->SetPosition(cam->GetPosition().x - cam->forward().x * movespeed * timer.DeltaTime(),
+			cam->GetPosition().y - cam->forward().y * movespeed * timer.DeltaTime(),
+			cam->GetPosition().z - cam->forward().z * movespeed * timer.DeltaTime());
+	if (input->IsKeyDown(DIK_A))
+		cam->SetPosition(cam->GetPosition().x - cam->right().x * movespeed * timer.DeltaTime(),
+			cam->GetPosition().y - cam->right().y * movespeed * timer.DeltaTime(),
+			cam->GetPosition().z - cam->right().z * movespeed * timer.DeltaTime());
+	if (input->IsKeyDown(DIK_D))
+		cam->SetPosition(cam->GetPosition().x + cam->right().x * movespeed * timer.DeltaTime(),
+			cam->GetPosition().y + cam->right().y * movespeed * timer.DeltaTime(),
+			cam->GetPosition().z + cam->right().z * movespeed * timer.DeltaTime());
+
+	if (input->GetMouseButtonState(input->RIGHT))
+	{
+		float mouseSensitivity = 5.f;
+		int dx = 0, dy = 0;
+		input->GetMouseDelta(dx, dy);
+		
+		cam->SetRotation(cam->GetRotation().x, cam->GetRotation().y + dx * mouseSensitivity * timer.DeltaTime(), cam->GetRotation().z);
+		cam->SetRotation(cam->GetRotation().x + dy * mouseSensitivity * timer.DeltaTime(), cam->GetRotation().y, cam->GetRotation().z);
+	}
+
+	bool draw = true;
+	if (input->IsKeyDown(DIK_LCONTROL))
+		draw = false;
+
+	if (input->GetMouseButtonState(input->LEFT))
+	{
+		XMFLOAT3 origin = cam->GetPosition();//graphics->GetScreenToWorldPoint(mouseX, mouseY, 0.f);
+		XMFLOAT3 target = graphics->GetScreenToWorldPoint(mouseX, mouseY, 1.f);
+
+		Ray3D ray(origin, target);
+
+		XMFLOAT3 out = XMFLOAT3(0, 0, 0);
+		if (graphics->GetVoxel()->RayCast(ray, out))
+			graphics->GetVoxel()->SetVoxelSphere(out, 0.3f, draw);
+	}
+#pragma endregion
+
+	return graphics->Render();
 }
 
 bool SystemClass::InitializeWindows(int& sWidth, int& sHeight)
