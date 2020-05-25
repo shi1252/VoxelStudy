@@ -1,5 +1,7 @@
 #include "VoxelShaderClass.h"
 #include "Defined.h"
+#include "LightClass.h"
+#include "ShaderParameter.h"
 
 bool VoxelShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
 {
@@ -11,9 +13,9 @@ void VoxelShaderClass::Shutdown()
 	ShutdownShader();
 }
 
-bool VoxelShaderClass::Render(ID3D11DeviceContext* context, int indexCount, XMMATRIX worldMat, XMMATRIX viewMat, XMMATRIX projMat, ID3D11ShaderResourceView* texture)
+bool VoxelShaderClass::Render(ID3D11DeviceContext* context, int indexCount, ShaderParameter& params, ID3D11ShaderResourceView* texture)
 {
-	if (!SetShaderParameters(context, worldMat, viewMat, projMat, texture))
+	if (!SetShaderParameters(context, params, texture))
 		return false;
 
 	RenderShader(context, indexCount);
@@ -65,22 +67,13 @@ bool VoxelShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, LPCWSTR
 
 	// Initialize input layout desc
 	// It has to equal with VertexIn
-	D3D11_INPUT_ELEMENT_DESC inputLayout[2];
-	inputLayout[0].SemanticName = "POSITION";
-	inputLayout[0].SemanticIndex = 0;
-	inputLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputLayout[0].InputSlot = 0;
-	inputLayout[0].AlignedByteOffset = 0;
-	inputLayout[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	inputLayout[0].InstanceDataStepRate = 0;
-
-	inputLayout[1].SemanticName = "TEXCOORD";
-	inputLayout[1].SemanticIndex = 0;
-	inputLayout[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-	inputLayout[1].InputSlot = 0;
-	inputLayout[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-	inputLayout[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	inputLayout[1].InstanceDataStepRate = 0;
+	D3D11_INPUT_ELEMENT_DESC inputLayout[] =
+	{
+		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA ,0 },
+		{ "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT ,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 }
+	};
 
 	// Get layout count
 	UINT numElements = sizeof(inputLayout) / sizeof(inputLayout[0]);
@@ -108,6 +101,14 @@ bool VoxelShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, LPCWSTR
 
 	// Create constant buffer ptr to access vs constant buffer
 	if (FAILED(device->CreateBuffer(&matBufferDesc, NULL, &matBuffer)))
+		return false;
+
+	matBufferDesc.ByteWidth = sizeof(LightBuffer);
+	if (FAILED(device->CreateBuffer(&matBufferDesc, NULL, &lightBuffer)))
+		return false;
+
+	matBufferDesc.ByteWidth = sizeof(CameraBuffer);
+	if (FAILED(device->CreateBuffer(&matBufferDesc, NULL, &camBuffer)))
 		return false;
 
 	// Initialize texture sampler desc
@@ -147,6 +148,18 @@ void VoxelShaderClass::ShutdownShader()
 		matBuffer = nullptr;
 	}
 
+	if (lightBuffer)
+	{
+		lightBuffer->Release();
+		lightBuffer = nullptr;
+	}
+
+	if (camBuffer)
+	{
+		camBuffer->Release();
+		camBuffer = nullptr;
+	}
+
 	if (layout)
 	{
 		layout->Release();
@@ -178,17 +191,19 @@ void VoxelShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMsg, HWND hwnd,
 	MessageBox(hwnd, L"Error compiling shader.", fileName, MB_OK);
 }
 
-bool VoxelShaderClass::SetShaderParameters(ID3D11DeviceContext* context, XMMATRIX worldMat, XMMATRIX viewMat, XMMATRIX projMat, ID3D11ShaderResourceView* texture)
+bool VoxelShaderClass::SetShaderParameters(ID3D11DeviceContext* context, ShaderParameter& params, ID3D11ShaderResourceView* texture)
 {
-	// Transpose matrix to shader can use it
-	worldMat = XMMatrixTranspose(worldMat);
-	viewMat = XMMatrixTranspose(viewMat);
-	projMat = XMMatrixTranspose(projMat);
-
-	// Lock to write to constant buffer
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
+
+#pragma region MatrixBuffer
+	// Lock to write to constant buffer
 	if (FAILED(context->Map(matBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 		return false;
+
+	// Transpose matrix to shader can use it
+	XMMATRIX worldMat = params.GetParam<XMMATRIX>("world");//XMMatrixTranspose(params.GetParam<XMMATRIX>("world"));
+	XMMATRIX viewMat = XMMatrixTranspose(params.GetParam<XMMATRIX>("view"));
+	XMMATRIX projMat = XMMatrixTranspose(params.GetParam<XMMATRIX>("proj"));
 
 	// Get ptr of constant buffer data
 	MatrixBuffer* data = (MatrixBuffer*)mappedResource.pData;
@@ -200,12 +215,42 @@ bool VoxelShaderClass::SetShaderParameters(ID3D11DeviceContext* context, XMMATRI
 
 	// Unlock constant buffer
 	context->Unmap(matBuffer, 0);
+#pragma endregion
+
+#pragma region LightBuffer
+	if (FAILED(context->Map(lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		return false;
+
+	LightBuffer* data2 = (LightBuffer*)mappedResource.pData;
+
+	data2->ambient = params.GetParam<LightClass*>("light")->GetAmbientColor();
+	data2->diffuse = params.GetParam<LightClass*>("light")->GetDiffuseColor();
+	data2->lightDir = params.GetParam<LightClass*>("light")->GetLightDirection();
+	data2->padding = 0.f;
+
+	context->Unmap(lightBuffer, 0);
+#pragma endregion
+
+#pragma region CameraBuffer
+	if (FAILED(context->Map(camBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+		return false;
+
+	CameraBuffer* data3 = (CameraBuffer*)mappedResource.pData;
+
+	data3->camPos = params.GetParam<XMFLOAT4>("camPos");
+
+	context->Unmap(camBuffer, 0);
+#pragma endregion
 
 	// Set constant buffer position value in vs
 	UINT bufferNumber = 0;
 
 	// Set constant buffer of vs
-	context->VSSetConstantBuffers(bufferNumber, 1, &matBuffer);
+	context->VSSetConstantBuffers(bufferNumber++, 1, &matBuffer);
+	context->VSSetConstantBuffers(bufferNumber++, 1, &camBuffer);
+
+	// Set constant buffer of ps
+	context->PSSetConstantBuffers(0, 1, &lightBuffer);
 
 	// Set texture resource of ps
 	context->PSSetShaderResources(0, 1, &texture);

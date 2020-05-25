@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 class Ray3D;
+class ThreadPool;
 
 struct VoxelVertex
 {
@@ -41,6 +42,8 @@ private:
 	{
 		XMFLOAT3 position;
 		XMFLOAT2 uv;
+		XMFLOAT3 normal = XMFLOAT3(0.f, 0.f, 0.f);
+		XMFLOAT4 color = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
 	};
 	//struct UCHAR3
 	//{
@@ -81,8 +84,12 @@ private:
 	XMUINT3 GetVoxelVertexPosition(const XMUINT3& pos, UCHAR vertexNumber);
 	UINT VertexPositionToArrayKey(const XMUINT3& pos);
 	VertexType VertexInterp(const XMUINT3& v0, const int edge, float threshold0);
+	VertexType VertexInterp(const XMUINT3& v0, const XMUINT3& v1, float threshold0);
 	unsigned char GetVoxelBitFlag(XMUINT3 pos);
 	void GetVoxelIA(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices);
+	void GetTransVoxelIA(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices);
+	void GetTransVoxelIAThreadPool(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices);
+	void GetTransVoxelIATask(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices, int startX, int endX);
 	XMUINT3 WorldPositionToLocalIndex(const XMFLOAT3& position);
 	//bool LoadVoxelToBuffers(VertexType *vertices, int *indices);
 
@@ -109,4 +116,6 @@ private:
 	bool dirtyFlag = false;
 
 	TargaTextureClass* texture = nullptr;
+
+	ThreadPool* pool = nullptr;
 };

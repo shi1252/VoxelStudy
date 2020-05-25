@@ -7,8 +7,10 @@ const float SCREEN_NEAR = 0.1f;
 
 class D3DClass;
 class CameraClass;
+class LightClass;
 class ModelClass;
 class TextureShaderClass;
+class VoxelShaderClass;
 class Voxel;
 class TextClass;
 
@@ -34,8 +36,10 @@ private:
 	D3DClass* d3d = nullptr;
 	CameraClass* camera = nullptr;
 	Voxel* voxel = nullptr;
+	LightClass* light = nullptr;
 	//ModelClass* model = nullptr;
-	TextureShaderClass* shader = nullptr;
+	//TextureShaderClass* shader = nullptr;
+	VoxelShaderClass* shader = nullptr;
 	TextClass* text = nullptr;
 
 	int width = 0;

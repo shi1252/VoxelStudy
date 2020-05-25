@@ -75,6 +75,9 @@
     <ClCompile Include="Ray3D.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="LightClass.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defined.h">
@@ -147,6 +150,15 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Transvoxel.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderParameter.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="LightClass.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

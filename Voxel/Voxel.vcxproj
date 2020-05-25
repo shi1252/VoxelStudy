@@ -149,6 +149,7 @@
     <ClCompile Include="FontShaderClass.cpp" />
     <ClCompile Include="GraphicsClass.cpp" />
     <ClCompile Include="InputClass.cpp" />
+    <ClCompile Include="LightClass.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ModelClass.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
@@ -174,15 +175,18 @@
     <ClInclude Include="FontShaderClass.h" />
     <ClInclude Include="GraphicsClass.h" />
     <ClInclude Include="InputClass.h" />
+    <ClInclude Include="LightClass.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="ModelClass.h" />
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="Ray3D.h" />
+    <ClInclude Include="ShaderParameter.h" />
     <ClInclude Include="SystemClass.h" />
     <ClInclude Include="TextClass.h" />
     <ClInclude Include="TargaTextureClass.h" />
     <ClInclude Include="TextureClass.h" />
     <ClInclude Include="TextureShaderClass.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Transvoxel.h" />
     <ClInclude Include="Voxel.h" />

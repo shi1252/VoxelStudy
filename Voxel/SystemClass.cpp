@@ -248,7 +248,7 @@ bool SystemClass::Frame()
 
 		XMFLOAT3 out = XMFLOAT3(0, 0, 0);
 		if (graphics->GetVoxel()->RayCast(ray, out))
-			graphics->GetVoxel()->SetVoxelSphere(out, 0.3f, draw);
+			graphics->GetVoxel()->SetVoxelSphere(out, 1.f, draw);
 	}
 #pragma endregion
 

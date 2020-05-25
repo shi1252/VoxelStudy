@@ -1,7 +1,10 @@
 #include "GraphicsClass.h"
 #include "D3DClass.h"
 #include "CameraClass.h"
+#include "LightClass.h"
+#include "ShaderParameter.h"
 #include "TextureShaderClass.h"
+#include "VoxelShaderClass.h"
 #include "ModelClass.h"
 #include "Voxel.h"
 #include "TextClass.h"
@@ -22,6 +25,12 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 		MessageBox(hWnd, L"Direct3D initialize error.", L"Error", MB_OK);
 		return false;
 	}
+
+	light = new LightClass;
+	if (!light)
+		return false;
+	light->SetAmbientColor(XMFLOAT4(0.5f, 0.5f, 0.5f, 1.f));
+	light->SetDiffuseColor(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	// Create camera
 	camera = new CameraClass;
@@ -49,7 +58,7 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 	}
 
 	// Create Voxel
-	voxel = new Voxel(XMFLOAT3(-25, -25, 0), XMUINT3(100, 100, 100), 0.25f);
+	voxel = new Voxel(XMFLOAT3(-50, -60, 0), XMUINT3(100, 100, 100), 1.f);
 	if (!voxel)
 		return false;
 
@@ -69,7 +78,7 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 	//}
 
 	// Create shader
-	shader = new TextureShaderClass;
+	shader = new VoxelShaderClass;
 	if (!shader)
 		return false;
 
@@ -117,6 +126,12 @@ void GraphicsClass::Shutdown()
 	{
 		delete camera;
 		camera = nullptr;
+	}
+
+	if (light)
+	{
+		delete light;
+		light = nullptr;
 	}
 
 	if (d3d)
@@ -195,13 +210,27 @@ bool GraphicsClass::Render()
 	d3d->GetProejctionMatrix(proj);
 	d3d->GetOrthoMatrix(ortho);
 
+#pragma region Set Parameters
+	ShaderParameter params;
+	params.SetParam("world", world);
+	params.SetParam("view", view);
+	params.SetParam("proj", proj);
+	params.SetParam("ortho", ortho);
+
+	XMFLOAT3 camPos3 = camera->GetPosition();
+	XMFLOAT4 camPos4 = XMFLOAT4(camPos3.x, camPos3.y, camPos3.z, 1.f);
+	params.SetParam("camPos", camPos4);
+
+	params.SetParam("light", light);
+#pragma endregion
+
 	// Bind vertex buffer, index buffer to pipeline to draw
 	//model->Render(d3d->GetDeviceContext());
 	voxel->Render(d3d->GetDeviceContext());
 
 	// Render model by using shader
 	//if (!shader->Render(d3d->GetDeviceContext(), model->GetIndexCount(), world, view, proj, model->GetTexture()))
-	if (!shader->Render(d3d->GetDeviceContext(), voxel->GetIndexCount(), world, view, proj, voxel->GetTexture()))
+	if (!shader->Render(d3d->GetDeviceContext(), voxel->GetIndexCount(), params, voxel->GetTexture()))
 		return false;
 
 	// Turn off Z buffer to draw 2D

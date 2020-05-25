@@ -1,18 +1,27 @@
 #include "Voxel.h"
-#include "TargaTextureClass.h"
+#include "MathHelper.h"
 #include "PerlinNoise.h"
 #include "Ray3D.h"
-#include "MathHelper.h"
+#include "TargaTextureClass.h"
+#include "ThreadPool.h"
+#include "Transvoxel.h"
 #include <math.h>
+
+using namespace MathHelper;
 
 #pragma region Lookup Table
 unsigned int edgeConnection[12][2] = {
-		{0,1}, {1,2}, {2,3}, {3,0},
-		{4,5}, {5,6}, {6,7}, {7,4},
+		//	{0,1}, {1,2}, {2,3}, {3,0},
+		//{4,5}, {5,6}, {6,7}, {7,4},
+		//{0,4}, {1,5}, {2,6}, {3,7} };
+		{0,1}, {1,2}, {3,2}, {0,3},
+		{4,5}, {5,6}, {7,6}, {4,7},
 		{0,4}, {1,5}, {2,6}, {3,7}};
 int vertexOffset[8][3] = {
-	{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1},
-	{0, 1, 0}, {1, 1, 0}, {1, 1, 1}, {0, 1, 1}};
+	{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
+	{0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1} };// Transvoxel
+	//{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1},
+	//{0, 1, 0}, {1, 1, 0}, {1, 1, 1}, {0, 1, 1}};
 int edgeDirection[12][3] = {
 	{1, 0, 0}, {0, 0, 1}, {-1, 0, 0}, {0, 0, -1},
 	{1, 0, 0}, {0, 0, 1}, {-1, 0, 0}, {0, 0, -1},
@@ -339,13 +348,13 @@ Voxel::Voxel(XMFLOAT3 pos, XMUINT3 chunkSize, float cellSize)
 		}
 	}
 
-	for (int x = 0; x < chunkSize.x; ++x)
+	for (int x = 0; x < chunkSize.x+1; ++x)
 	{
-		for (int y = 0; y < chunkSize.y / 2.f; ++y)
+		for (int y = 0; y < chunkSize.y+1; ++y)
 		{
-			for (int z = 0; z < chunkSize.z; ++z)
+			for (int z = 0; z < chunkSize.z+1; ++z)
 			{
-				SetVoxelVertex(XMUINT3(x, y, z));
+				SetVoxelVertex(XMUINT3(x, y, z), (chunkSize.y / 2.f - y + 0.f));
 			}
 		}
 	}
@@ -357,6 +366,10 @@ Voxel::~Voxel()
 
 bool Voxel::Initialize(ID3D11Device* device, ID3D11DeviceContext* context, LPCSTR fileName)
 {
+	pool = new ThreadPool;
+	if (pool == nullptr)
+		return false;
+
 	// Initialize vertex index buffer
 	if (!InitializeBuffers(device))
 		return false;
@@ -367,6 +380,12 @@ bool Voxel::Initialize(ID3D11Device* device, ID3D11DeviceContext* context, LPCST
 
 void Voxel::Shutdown()
 {
+	if (pool)
+	{
+		delete pool;
+		pool = nullptr;
+	}
+
 	voxelVertices.clear();
 
 	ReleaseTexture();
@@ -415,32 +434,49 @@ void Voxel::SetVoxelSphere(XMFLOAT3 pos, float radius, bool draw)
 	if (index.x == -1)
 		return;
 
-	for (int z = MathHelper::Clamp(index.z - (radius / cellSize - 1), 0.f, (float)chunkSize.z);
+	for (int z = MathHelper::Clamp(index.z - (radius / cellSize), 0.f, (float)chunkSize.z);
 		z < MathHelper::Clamp(index.z + (radius / cellSize + 1), 0.f, (float)chunkSize.z); ++z)
 	{
-		for (int y = MathHelper::Clamp(index.y - (radius / cellSize - 1), 0.f, (float)chunkSize.y);
+		for (int y = MathHelper::Clamp(index.y - (radius / cellSize), 0.f, (float)chunkSize.y);
 			y < MathHelper::Clamp(index.y + (radius / cellSize + 1), 0.f, (float)chunkSize.y); ++y)
 		{
-			for (int x = MathHelper::Clamp(index.x - (radius / cellSize - 1), 0.f, (float)chunkSize.x);
+			for (int x = MathHelper::Clamp(index.x - (radius / cellSize), 0.f, (float)chunkSize.x);
 				x < MathHelper::Clamp(index.x + (radius / cellSize + 1), 0.f, (float)chunkSize.x); ++x)
 			{
-				XMFLOAT3 targetPos = XMFLOAT3(pos.x + ((int)index.x - x) * cellSize, pos.y + ((int)index.y - y) * cellSize, pos.z + ((int)index.z - z) * cellSize);
-				float distance = XMVector3Length(XMVectorSubtract(XMLoadFloat3(&pos), XMLoadFloat3(&targetPos))).m128_f32[0];
+				XMFLOAT3 targetPos = XMFLOAT3(this->position.x + x * cellSize, 
+					this->position.y + y * cellSize,
+					this->position.z + z * cellSize);
+				//XMFLOAT3 targetPos = XMFLOAT3(pos.x - ((int)index.x - x) * cellSize, pos.y - ((int)index.y - y) * cellSize, pos.z - ((int)index.z - z) * cellSize);
+				float distance = MathHelper::Distance(pos, targetPos);//XMVector3Length(XMVectorSubtract(XMLoadFloat3(&pos), XMLoadFloat3(&targetPos))).m128_f32[0];
 
 				XMUINT3 newPos = XMUINT3(x, y, z);
-				if (!draw && GetVoxelVertex(newPos) <= 0.f)
+				float value = radius - distance;
+				float t = GetVoxelVertex(newPos);
+				//if (t == value || MathHelper::Sign(t) == MathHelper::Sign(value) /*|| value > 1.f || value < -1.f*/)
+				//	continue;
+				if (draw)
 				{
-					continue;
-				}
-				if (distance > radius)
-				{
-					if ((distance - radius) <= cellSize)
-						SetVoxelVertex(newPos, (distance - radius) / cellSize);
+					if (t < value)
+						SetVoxelVertex(newPos, value);
 				}
 				else
 				{
-					SetVoxelVertex(newPos, (draw ? 1.f : 0.f));
+					if (t > -value)
+						SetVoxelVertex(newPos, -value);
 				}
+				//if (!draw && GetVoxelVertex(newPos) <= 0.f)
+				//{
+				//	continue;
+				//}
+				//if (distance > radius)
+				//{
+				//	if ((distance - radius) <= cellSize)
+				//		SetVoxelVertex(newPos, (distance - radius) / cellSize);
+				//}
+				//else
+				//{
+				//	SetVoxelVertex(newPos, (draw ? 1.f : 0.f));
+				//}
 			}
 		}
 	}
@@ -449,7 +485,7 @@ void Voxel::SetVoxelSphere(XMFLOAT3 pos, float radius, bool draw)
 void Voxel::SetVoxelVertex(XMUINT3 pos, float threshold)
 {
 	voxelVertices[pos.x + pos.y * (chunkSize.x + 1) + 
-		pos.z * (chunkSize.x + 1) * (chunkSize.y + 1)].threshold = threshold;
+		pos.z * (chunkSize.x + 1) * (chunkSize.y + 1)].threshold = MathHelper::Clamp(threshold, -1.f, 1.f);
 
 	dirtyFlag = true;
 }
@@ -492,8 +528,6 @@ bool Voxel::RayCast(Ray3D& ray, XMFLOAT3 &out)
 
 	while (!IsEqual(last, current))
 	{
-		if (current.x == -1 || current.y == -1 || current.z == -1)
-			break;
 		if (tMaxX < tMaxY)
 		{
 			if (tMaxX < tMaxZ)
@@ -520,6 +554,8 @@ bool Voxel::RayCast(Ray3D& ray, XMFLOAT3 &out)
 				tMaxZ += tDeltaZ;
 			}
 		}
+		if (current.x >= chunkSize.x || current.y >= chunkSize.y || current.z >= chunkSize.z)
+			break;
 
 		unsigned char bitFlag = GetVoxelBitFlag(current);
 		if (bitFlag != 0 && bitFlag != 255)
@@ -538,6 +574,8 @@ float Voxel::InterpThreshold(const float& t0, const float& t1)
 {
 	if ((t1 - t0) < FLT_EPSILON)
 		return 0.5f;
+	else
+		return (- t0 / (t1 - t0));
 	if (t0 < FLT_EPSILON)
 		return (1.f - t1);
 	else
@@ -564,6 +602,18 @@ Voxel::VertexType Voxel::VertexInterp(const XMUINT3& v0, const int edge, float t
 			position.z + (v0.z + edgeDirection[edge][2] * (1.f - threshold0)) * cellSize);
 	
 		return v;
+}
+
+Voxel::VertexType Voxel::VertexInterp(const XMUINT3& v0, const XMUINT3& v1, float threshold0)
+{
+	VertexType v;
+
+	v.position = XMFLOAT3(position.x + (v0.x * threshold0 + v1.x * (1.f - threshold0)) * cellSize,
+		position.y + (v0.y * threshold0 + v1.y * (1.f - threshold0)) * cellSize,
+		position.z + (v0.z * threshold0 + v1.z * (1.f - threshold0)) * cellSize);
+
+	return v;
+
 }
 
 unsigned char Voxel::GetVoxelBitFlag(XMUINT3 pos)
@@ -601,11 +651,17 @@ void Voxel::GetVoxelIA(std::vector<Voxel::VertexType>& vertices, std::vector<int
 					if (edgeTable[bitFlag] & (1 << i))
 					{
 						vertList[i] = vertices.size();
-						vertices.push_back(VertexInterp(
+						vertices.push_back(
+							VertexInterp(
+								GetVoxelVertexPosition(XMUINT3(x, y, z), edgeConnection[i][0]),
+								GetVoxelVertexPosition(XMUINT3(x, y, z), edgeConnection[i][1]),
+								InterpThreshold(GetVoxelVertex(GetVoxelVertexPosition(XMUINT3(x, y, z), edgeConnection[i][0])),
+									GetVoxelVertex(GetVoxelVertexPosition(XMUINT3(x, y, z), edgeConnection[i][1])))));
+							/*VertexInterp(
 							GetVoxelVertexPosition(XMUINT3(x, y, z), edgeConnection[i][0]),
 							i,
 							InterpThreshold(GetVoxelVertex(GetVoxelVertexPosition(XMUINT3(x, y, z), edgeConnection[i][0])),
-								GetVoxelVertex(GetVoxelVertexPosition(XMUINT3(x, y, z), edgeConnection[i][1]))) ));
+								GetVoxelVertex(GetVoxelVertexPosition(XMUINT3(x, y, z), edgeConnection[i][1]))) ));*/
 					}
 				}
 
@@ -618,6 +674,205 @@ void Voxel::GetVoxelIA(std::vector<Voxel::VertexType>& vertices, std::vector<int
 					vertices[vertList[triTable[bitFlag][i]]].uv = XMFLOAT2(0.f, 1.f);
 					vertices[vertList[triTable[bitFlag][i + 1]]].uv = XMFLOAT2(0.5f, 0.f);
 					vertices[vertList[triTable[bitFlag][i + 2]]].uv = XMFLOAT2(1.f, 1.f);
+				}
+			}
+		}
+	}
+}
+
+void Voxel::GetTransVoxelIA(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices)
+{
+	for (int z = 0; z < chunkSize.z; ++z)
+	{
+		for (int y = 0; y < chunkSize.y; ++y)
+		{
+			for (int x = 0; x < chunkSize.x; ++x)
+			{
+				unsigned char bitFlag = GetVoxelBitFlag(XMUINT3(x, y, z));
+				if (edgeTable[bitFlag] == 0) continue;
+
+				RegularCellData rcd = regularCellData[regularCellClass[bitFlag]];
+				int vc = rcd.GetVertexCount();
+				int tc = rcd.GetTriangleCount();
+
+				std::vector<unsigned char> vd;
+				for (int i = 0; i < vc; ++i)
+				{
+					vd.push_back(regularVertexData[bitFlag][i]);
+				}
+
+				std::unordered_map<int, int> vertList;
+				std::vector<int> idxList;
+
+				int mask = (x >= 0 ? 1 : 0) | (z >= 0 ? 2 : 0) | (y >= 0 ? 4 : 0);
+				for (int i = 0; i < vc; ++i)
+				{
+					int d = (vd[i] & 0xFF);
+					int d0 = d >> 4;
+					int d1 = d & 0x0F;
+
+					int r = vd[i] >> 8;
+					int direction = r >> 4;
+					int index = r & 0x0F;
+
+					int nIndex = -1;
+					bool p = (direction & mask) == direction;
+
+					XMUINT3 p0 = XMUINT3(x + vertexOffset[d0][0], y + vertexOffset[d0][1], z + vertexOffset[d0][2]);
+					XMUINT3 p1 = XMUINT3(x + vertexOffset[d1][0], y + vertexOffset[d1][1], z + vertexOffset[d1][2]);
+
+					float t0 = GetVoxelVertex(p0);
+					float t1 = GetVoxelVertex(p1);
+					float interpt = (0.f - t0) / (t1 - t0);
+					idxList.push_back(vertices.size());
+					vertices.push_back(VertexInterp(p0, p1, interpt));
+				}
+
+				for (int i = 0; i < tc; ++i)
+				{
+					int t = i * 3;
+					indices.push_back(idxList[rcd.vertexIndex[t]]);
+					indices.push_back(idxList[rcd.vertexIndex[t + 1]]);
+					indices.push_back(idxList[rcd.vertexIndex[t + 2]]);
+
+					vertices[idxList[rcd.vertexIndex[t]]].uv = XMFLOAT2(0.f, 1.f);
+					vertices[idxList[rcd.vertexIndex[t+1]]].uv = XMFLOAT2(0.5f, 0.f);
+					vertices[idxList[rcd.vertexIndex[t+2]]].uv = XMFLOAT2(1.f, 1.f);
+
+					vertices[idxList[rcd.vertexIndex[t]]].color = XMFLOAT4(1.f, 0.f, 0.f, 1.f);
+					vertices[idxList[rcd.vertexIndex[t+1]]].color = XMFLOAT4(0.f, 1.f, 0.f, 1.f);
+					vertices[idxList[rcd.vertexIndex[t+2]]].color = XMFLOAT4(0.f, 0.f, 1.f, 1.f);
+				}
+			}
+		}
+	}
+}
+
+void Voxel::GetTransVoxelIAThreadPool(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices)
+{
+	if (pool == nullptr)
+	{
+		GetTransVoxelIA(vertices, indices);
+		return;
+	}
+	size_t tc = pool->GetTotalThreadCount();
+
+	std::vector<std::future<int>> results;
+	std::vector<std::vector<Voxel::VertexType>> threadVertices(tc);
+	std::vector<std::vector<int>> threadIndices(tc);
+
+	for (int i = 0; i < tc; ++i)
+	{
+		std::vector<Voxel::VertexType> v;
+		std::vector<int> idx;
+		threadVertices.push_back(v);
+		threadIndices.push_back(idx);
+	}
+
+	int dx = chunkSize.x / tc;
+	int startX = 0;
+	int endX = dx;
+
+	for (int i = 0; i < tc; ++i)
+	{
+		results.emplace_back(
+			pool->Enqueue(
+				[=, &threadVertices, &threadIndices]
+				{
+					GetTransVoxelIATask(threadVertices[i], threadIndices[i], startX, endX);
+					return 1;
+				})
+		);
+		startX = endX;
+		endX = (i == (tc-2)) ? chunkSize.x : MathHelper::Clamp(endX + dx, 0, (int)chunkSize.x);
+	}
+
+	for (int i = 0; i < tc; ++i)
+	{
+		auto&& result = results[i];
+		result.wait();
+
+		int prevVC = vertices.size();
+
+		for (int j = 0; j < threadVertices[i].size(); ++j)
+		{
+			vertices.push_back(threadVertices[i][j]);
+		}
+
+		for (int j = 0; j < threadIndices[i].size(); ++j)
+		{
+			indices.push_back(threadIndices[i][j] + prevVC);
+		}
+	}
+}
+
+void Voxel::GetTransVoxelIATask(std::vector<Voxel::VertexType>& vertices, std::vector<int>& indices, int startX, int endX)
+{
+	for (int z = 0; z < chunkSize.z; ++z)
+	{
+		for (int y = 0; y < chunkSize.y; ++y)
+		{
+			for (int x = startX; x < endX; ++x)
+			{
+				unsigned char bitFlag = GetVoxelBitFlag(XMUINT3(x, y, z));
+				if (edgeTable[bitFlag] == 0) continue;
+
+				RegularCellData rcd = regularCellData[regularCellClass[bitFlag]];
+				int vc = rcd.GetVertexCount();
+				int tc = rcd.GetTriangleCount();
+
+				std::vector<unsigned char> vd;
+				for (int i = 0; i < vc; ++i)
+				{
+					vd.push_back(regularVertexData[bitFlag][i]);
+				}
+
+				std::unordered_map<int, int> vertList;
+				std::vector<int> idxList;
+
+				int mask = (x >= 0 ? 1 : 0) | (z >= 0 ? 2 : 0) | (y >= 0 ? 4 : 0);
+				for (int i = 0; i < vc; ++i)
+				{
+					int d = (vd[i] & 0xFF);
+					int d0 = d >> 4;
+					int d1 = d & 0x0F;
+
+					int r = vd[i] >> 8;
+					int direction = r >> 4;
+					int index = r & 0x0F;
+
+					int nIndex = -1;
+					bool p = (direction & mask) == direction;
+
+					XMUINT3 p0 = XMUINT3(x + vertexOffset[d0][0], y + vertexOffset[d0][1], z + vertexOffset[d0][2]);
+					XMUINT3 p1 = XMUINT3(x + vertexOffset[d1][0], y + vertexOffset[d1][1], z + vertexOffset[d1][2]);
+
+					float t0 = GetVoxelVertex(p0);
+					float t1 = GetVoxelVertex(p1);
+					float interpt = (0.f - t0) / (t1 - t0);
+					idxList.push_back(vertices.size());
+					vertices.push_back(VertexInterp(p0, p1, interpt));
+				}
+
+				for (int i = 0; i < tc; ++i)
+				{
+					int t = i * 3;
+					indices.push_back(idxList[rcd.vertexIndex[t]]);
+					indices.push_back(idxList[rcd.vertexIndex[t + 1]]);
+					indices.push_back(idxList[rcd.vertexIndex[t + 2]]);
+
+					vertices[idxList[rcd.vertexIndex[t]]].uv = XMFLOAT2(0.f, 1.f);
+					vertices[idxList[rcd.vertexIndex[t + 1]]].uv = XMFLOAT2(0.5f, 0.f);
+					vertices[idxList[rcd.vertexIndex[t + 2]]].uv = XMFLOAT2(1.f, 1.f);
+
+					//vertices[idxList[rcd.vertexIndex[t]]].color = XMFLOAT4(1.f, 0.f, 0.f, 1.f);
+					//vertices[idxList[rcd.vertexIndex[t + 1]]].color = XMFLOAT4(0.f, 1.f, 0.f, 1.f);
+					//vertices[idxList[rcd.vertexIndex[t + 2]]].color = XMFLOAT4(0.f, 0.f, 1.f, 1.f);
+
+					XMFLOAT3 normal = MathHelper::NormalVector(vertices[idxList[rcd.vertexIndex[t]]].position, vertices[idxList[rcd.vertexIndex[t + 1]]].position, vertices[idxList[rcd.vertexIndex[t + 2]]].position);
+					vertices[idxList[rcd.vertexIndex[t]]].normal += normal;
+					vertices[idxList[rcd.vertexIndex[t + 1]]].normal += normal;
+					vertices[idxList[rcd.vertexIndex[t + 2]]].normal += normal;
 				}
 			}
 		}
@@ -645,7 +900,9 @@ bool Voxel::InitializeBuffers(ID3D11Device* device)
 	std::vector<Voxel::VertexType> vertices;
 	std::vector<int> indices;
 
-	GetVoxelIA(vertices, indices);
+	//GetTransVoxelIA(vertices, indices);
+	GetTransVoxelIAThreadPool(vertices, indices);
+	//GetVoxelIA(vertices, indices);
 
 	// Initialize vertex buffer desc
 	D3D11_BUFFER_DESC vbd;
@@ -744,7 +1001,7 @@ void Voxel::RenderBuffers(ID3D11DeviceContext* context)
 	context->IASetIndexBuffer(ib, DXGI_FORMAT_R32_UINT, 0);
 
 	// Set primitive topology
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 bool Voxel::LoadTexture(ID3D11Device* device, ID3D11DeviceContext* context, LPCSTR fileName)
