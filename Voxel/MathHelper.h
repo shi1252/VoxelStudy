@@ -1,5 +1,6 @@
 #pragma once
 #include <math.h>
+#define Rad2Deg(x) (x * 57.2957795131f)
 namespace MathHelper
 {
 	template <typename T>
@@ -48,5 +49,61 @@ namespace MathHelper
 	{
 		lhs = XMFLOAT3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
 		return lhs;
+	}
+
+	inline XMFLOAT3 operator-=(XMFLOAT3& lhs, const XMFLOAT3& rhs)
+	{
+		lhs = XMFLOAT3(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
+		return lhs;
+	}
+
+	inline XMFLOAT3 operator+(const XMFLOAT3& lhs, const XMFLOAT3& rhs)
+	{
+		return XMFLOAT3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
+	}
+
+	inline XMFLOAT3 operator-(const XMFLOAT3& lhs, const XMFLOAT3& rhs)
+	{
+		return XMFLOAT3(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
+	}
+
+	inline bool operator!=(const XMFLOAT3& lhs, const XMFLOAT3& rhs)
+	{
+		return (lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z);
+	}
+
+	inline XMUINT3 operator+(const XMUINT3& lhs, const XMUINT3& rhs)
+	{
+		return XMUINT3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
+	}
+
+	inline XMUINT3 operator/(const XMUINT3& lhs, const UINT& div)
+	{
+		return XMUINT3(lhs.x / div, lhs.y / div, lhs.z / div);
+	}
+
+	inline XMUINT3 operator-(const XMUINT3& lhs, const XMUINT3& rhs)
+	{
+		return XMUINT3(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
+	}
+
+	inline bool operator==(const XMUINT3& lhs, const XMUINT3& rhs)
+	{
+		return (lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
+	}
+
+	inline XMFLOAT3 operator*(const XMFLOAT3& lhs, const float& val)
+	{
+		return XMFLOAT3(lhs.x * val, lhs.y * val, lhs.z * val);
+	}
+
+	static XMUINT3 XMFLOAT3ToXMUINT3(const XMFLOAT3& lhs)
+	{
+		return XMUINT3(lhs.x, lhs.y, lhs.z);
+	}
+
+	static XMFLOAT3 XMUINT3ToXMFLOAT3(const XMUINT3& lhs)
+	{
+		return XMFLOAT3(lhs.x, lhs.y, lhs.z);
 	}
 };

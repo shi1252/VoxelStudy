@@ -25,6 +25,8 @@ public:
 	void GetMouseLocation(int& x, int& y);
 	void GetMouseDelta(int& x, int& y);
 	bool GetMouseButtonState(MState button);
+	bool GetMouseButtonDown(MState button);
+	bool GetMouseButtonUp(MState button);
 private:
 	bool ReadKeyboard();
 	bool ReadMouse();
@@ -37,6 +39,8 @@ private:
 	int height;
 	int mouseX;
 	int mouseY;
+	DIMOUSESTATE prevMouseState;
+	bool init = true;
 
 	IDirectInput8* directInput = nullptr;
 	IDirectInputDevice8* keyboard = nullptr;

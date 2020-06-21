@@ -1,5 +1,6 @@
 #pragma once
 #include "Defined.h"
+#include <vector>
 
 const bool VSYNC_ENABLED = true;
 const float SCREEN_FAR = 1000.f;
@@ -11,8 +12,10 @@ class LightClass;
 class ModelClass;
 class TextureShaderClass;
 class VoxelShaderClass;
+class ColorShaderClass;
 class Voxel;
 class TextClass;
+class LineClass;
 
 class GraphicsClass
 {
@@ -32,6 +35,8 @@ public:
 
 	XMFLOAT3 GetScreenToWorldPoint(int& x, int& y, float z);
 
+	LineClass* line = nullptr;
+
 private:
 	D3DClass* d3d = nullptr;
 	CameraClass* camera = nullptr;
@@ -41,6 +46,7 @@ private:
 	//TextureShaderClass* shader = nullptr;
 	VoxelShaderClass* shader = nullptr;
 	TextClass* text = nullptr;
+	ColorShaderClass* colorShader = nullptr;
 
 	int width = 0;
 	int height = 0;

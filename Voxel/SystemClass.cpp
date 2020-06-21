@@ -2,10 +2,14 @@
 #include "SystemClass.h"
 #include "GraphicsClass.h"
 #include "InputClass.h"
+#include "LineClass.h"
 #include "D3DClass.h"
 #include "CameraClass.h"
 #include "Ray3D.h"
 #include "Voxel.h"
+#include "MathHelper.h"
+
+using namespace MathHelper;
 
 SystemClass::SystemClass(HINSTANCE h)
 {
@@ -239,7 +243,7 @@ bool SystemClass::Frame()
 	if (input->IsKeyDown(DIK_LCONTROL))
 		draw = false;
 
-	if (input->GetMouseButtonState(input->LEFT))
+	if (input->GetMouseButtonDown(input->LEFT))
 	{
 		XMFLOAT3 origin = cam->GetPosition();//graphics->GetScreenToWorldPoint(mouseX, mouseY, 0.f);
 		XMFLOAT3 target = graphics->GetScreenToWorldPoint(mouseX, mouseY, 1.f);
@@ -248,7 +252,58 @@ bool SystemClass::Frame()
 
 		XMFLOAT3 out = XMFLOAT3(0, 0, 0);
 		if (graphics->GetVoxel()->RayCast(ray, out))
-			graphics->GetVoxel()->SetVoxelSphere(out, 1.f, draw);
+			graphics->GetVoxel()->SetVoxelSphere(out, .9f, draw);
+	}
+
+	if (input->IsKeyDown(DIK_Z))
+	{
+		XMFLOAT3 origin = cam->GetPosition();//graphics->GetScreenToWorldPoint(mouseX, mouseY, 0.f);
+		XMFLOAT3 target = graphics->GetScreenToWorldPoint(mouseX, mouseY, 1.f);
+
+		Ray3D ray(origin, target);
+
+		XMFLOAT3 out = XMFLOAT3(0, 0, 0);
+		if (graphics->GetVoxel()->RayCast(ray, out))
+			graphics->GetVoxel()->SetNavStart(out);
+	}
+
+	if (input->IsKeyDown(DIK_X))
+	{
+		XMFLOAT3 origin = cam->GetPosition();//graphics->GetScreenToWorldPoint(mouseX, mouseY, 0.f);
+		XMFLOAT3 target = graphics->GetScreenToWorldPoint(mouseX, mouseY, 1.f);
+
+		Ray3D ray(origin, target);
+
+		XMFLOAT3 out = XMFLOAT3(0, 0, 0);
+		if (graphics->GetVoxel()->RayCast(ray, out))
+			graphics->GetVoxel()->SetNavEnd(out);
+	}
+
+	if (input->IsKeyDown(DIK_X))
+	{
+		std::vector<XMFLOAT3> path;
+		graphics->GetVoxel()->VoxelAStar(path);
+		for (int i = 0; i < path.size(); ++i)
+		{
+			LineClass::VertexType v = { path[i] + XMFLOAT3(0.f, 1.f, 0.f), XMFLOAT4(1.f, 0.f, 0.f, 1.f) };
+			graphics->line->vertices.push_back(v);
+		}
+		for (int i = 0; i < graphics->line->vertices.size(); ++i)
+			graphics->line->indices.push_back(i);
+	}
+
+	if (input->IsKeyDown(DIK_C))
+	{
+		std::vector<XMFLOAT3> path;
+		graphics->GetVoxel()->VoxelAStar(path);
+		graphics->GetVoxel()->PathOptimization(path);
+		for (int i = 0; i < path.size(); ++i)
+		{
+			LineClass::VertexType v = { path[i] + XMFLOAT3(0.f, 1.f, 0.f), XMFLOAT4(1.f, 0.f, 0.f, 1.f) };
+			graphics->line->vertices.push_back(v);
+		}
+		for (int i = 0; i < graphics->line->vertices.size(); ++i)
+			graphics->line->indices.push_back(i);
 	}
 #pragma endregion
 

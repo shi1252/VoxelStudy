@@ -48,6 +48,12 @@ bool InputClass::Initialize(HINSTANCE hInstance, HWND hWnd, int width, int heigh
 	if (FAILED(mouse->Acquire()))
 		return false;
 
+	if (ReadMouse())
+	{
+		prevMouseState = mouseState;
+		init = false;
+	}
+
 	return true;
 }
 
@@ -109,6 +115,16 @@ bool InputClass::GetMouseButtonState(MState button)
 	return (mouseState.rgbButtons[button] & 0x80);
 }
 
+bool InputClass::GetMouseButtonDown(MState button)
+{
+	return !(prevMouseState.rgbButtons[button] & 0x80) && (mouseState.rgbButtons[button] & 0x80);
+}
+
+bool InputClass::GetMouseButtonUp(MState button)
+{
+	return (prevMouseState.rgbButtons[button] & 0x80) && !(mouseState.rgbButtons[button] & 0x80);
+}
+
 bool InputClass::ReadKeyboard()
 {
 	// Get keyboard device
@@ -127,6 +143,8 @@ bool InputClass::ReadKeyboard()
 
 bool InputClass::ReadMouse()
 {
+	if (!init)
+		prevMouseState = mouseState;
 	// Get mouse device
 	HRESULT result = mouse->GetDeviceState(sizeof(DIMOUSESTATE), (LPVOID)&mouseState);
 	if (FAILED(result))

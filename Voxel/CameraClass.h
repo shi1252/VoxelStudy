@@ -21,6 +21,8 @@ public:
 	void Render();
 	void GetViewMatrix(XMMATRIX& view);
 
+	static CameraClass* mainCam;
+
 private:
 	XMFLOAT3 position;
 	XMFLOAT3 rotation;

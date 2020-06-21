@@ -150,9 +150,12 @@
     <ClCompile Include="GraphicsClass.cpp" />
     <ClCompile Include="InputClass.cpp" />
     <ClCompile Include="LightClass.cpp" />
+    <ClCompile Include="LineClass.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MeshClass.cpp" />
     <ClCompile Include="ModelClass.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
+    <ClCompile Include="PriorityQueue.cpp" />
     <ClCompile Include="Ray3D.cpp" />
     <ClCompile Include="SystemClass.cpp" />
     <ClCompile Include="TextClass.cpp" />
@@ -161,6 +164,7 @@
     <ClCompile Include="TextureShaderClass.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="Voxel.cpp" />
+    <ClCompile Include="VoxelOctree.cpp" />
     <ClCompile Include="VoxelShaderClass.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -176,9 +180,12 @@
     <ClInclude Include="GraphicsClass.h" />
     <ClInclude Include="InputClass.h" />
     <ClInclude Include="LightClass.h" />
+    <ClInclude Include="LineClass.h" />
     <ClInclude Include="MathHelper.h" />
+    <ClInclude Include="MeshClass.h" />
     <ClInclude Include="ModelClass.h" />
     <ClInclude Include="PerlinNoise.h" />
+    <ClInclude Include="PriorityQueue.h" />
     <ClInclude Include="Ray3D.h" />
     <ClInclude Include="ShaderParameter.h" />
     <ClInclude Include="SystemClass.h" />
@@ -190,7 +197,11 @@
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Transvoxel.h" />
     <ClInclude Include="Voxel.h" />
+    <ClInclude Include="VoxelOctree.h" />
     <ClInclude Include="VoxelShaderClass.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

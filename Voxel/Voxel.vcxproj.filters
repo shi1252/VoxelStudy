@@ -13,69 +13,99 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Framework">
+      <UniqueIdentifier>{103d0d49-94c0-45f2-817b-468f88c1080b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Framework\private">
+      <UniqueIdentifier>{bb8ba583-aadc-4331-b30a-359eff58d599}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Framework\public">
+      <UniqueIdentifier>{82085b9d-7cd4-431b-a0bd-5abd87a60570}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderClass">
+      <UniqueIdentifier>{80a747a9-8889-4ca4-952e-7a0c564deae0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderClass\private">
+      <UniqueIdentifier>{26de9267-8d72-482d-9851-a15274e1980b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderClass\public">
+      <UniqueIdentifier>{a6d8b6da-eb9b-46e6-b1d7-1e75edac467b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SystemClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="InputClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="GraphicsClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="D3DClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="ColorShaderClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="ModelClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="CameraClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureShaderClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="Voxel.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="VoxelShaderClass.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="CameraClass.cpp">
+      <Filter>Framework\private</Filter>
     </ClCompile>
-    <ClCompile Include="Timer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="PerlinNoise.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="FontClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="FontShaderClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="TextClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="TargaTextureClass.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureClass.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="D3DClass.cpp">
+      <Filter>Framework\private</Filter>
     </ClCompile>
     <ClCompile Include="DDSTextureLoader.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>Framework\private</Filter>
     </ClCompile>
-    <ClCompile Include="Ray3D.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="FontClass.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsClass.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="InputClass.cpp">
+      <Filter>Framework\private</Filter>
     </ClCompile>
     <ClCompile Include="LightClass.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelClass.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="PerlinNoise.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="Ray3D.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemClass.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="TargaTextureClass.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="TextClass.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureClass.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
+    <ClCompile Include="ColorShaderClass.cpp">
+      <Filter>ShaderClass\private</Filter>
+    </ClCompile>
+    <ClCompile Include="FontShaderClass.cpp">
+      <Filter>ShaderClass\private</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureShaderClass.cpp">
+      <Filter>ShaderClass\private</Filter>
+    </ClCompile>
+    <ClCompile Include="VoxelShaderClass.cpp">
+      <Filter>ShaderClass\private</Filter>
+    </ClCompile>
+    <ClCompile Include="VoxelOctree.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshClass.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="PriorityQueue.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="LineClass.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,80 +116,95 @@
     <ClInclude Include="DxDefine.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SystemClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="InputClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="GraphicsClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="AlignedAllocationPolicy.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="D3DClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="ColorShaderClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="ModelClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="CameraClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureShaderClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="Voxel.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="VoxelShaderClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Timer.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="PerlinNoise.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="MathHelper.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="FontClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="FontShaderClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="TextClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="TargaTextureClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="DDSTextureLoader.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Ray3D.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Transvoxel.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="ThreadPool.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="AlignedAllocationPolicy.h">
+      <Filter>Framework\public</Filter>
     </ClInclude>
-    <ClInclude Include="ShaderParameter.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="CameraClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="DDSTextureLoader.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="FontClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="InputClass.h">
+      <Filter>Framework\public</Filter>
     </ClInclude>
     <ClInclude Include="LightClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="MathHelper.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="PerlinNoise.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="Ray3D.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderParameter.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="TargaTextureClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="TextClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureClass.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Framework\public</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorShaderClass.h">
+      <Filter>ShaderClass\public</Filter>
+    </ClInclude>
+    <ClInclude Include="FontShaderClass.h">
+      <Filter>ShaderClass\public</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureShaderClass.h">
+      <Filter>ShaderClass\public</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelShaderClass.h">
+      <Filter>ShaderClass\public</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelOctree.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="MeshClass.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="PriorityQueue.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="LineClass.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

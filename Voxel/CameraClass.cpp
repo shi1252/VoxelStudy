@@ -1,10 +1,14 @@
 #include "Defined.h"
 #include "CameraClass.h"
 
+CameraClass* CameraClass::mainCam = nullptr;
+
 CameraClass::CameraClass()
 {
 	position = XMFLOAT3(0.f, 0.f, 0.f);
 	rotation = XMFLOAT3(0.f, 0.f, 0.f);
+	if (mainCam == nullptr)
+		mainCam = this;
 }
 
 void CameraClass::SetPosition(float x, float y, float z)

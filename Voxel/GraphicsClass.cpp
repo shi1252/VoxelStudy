@@ -3,11 +3,16 @@
 #include "CameraClass.h"
 #include "LightClass.h"
 #include "ShaderParameter.h"
+#include "ColorShaderClass.h"
 #include "TextureShaderClass.h"
 #include "VoxelShaderClass.h"
 #include "ModelClass.h"
 #include "Voxel.h"
 #include "TextClass.h"
+#include "LineClass.h"
+#include "MathHelper.h"
+
+using namespace MathHelper;
 
 bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 {
@@ -58,7 +63,7 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 	}
 
 	// Create Voxel
-	voxel = new Voxel(XMFLOAT3(-50, -60, 0), XMUINT3(100, 100, 100), 1.f);
+	voxel = new Voxel(XMFLOAT3(-50, -80, 0), 64, 1.f);
 	if (!voxel)
 		return false;
 
@@ -77,6 +82,8 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 	//	return false;
 	//}
 
+	line = new LineClass();
+
 	// Create shader
 	shader = new VoxelShaderClass;
 	if (!shader)
@@ -84,6 +91,16 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 
 	// Initialize shader
 	if (!shader->Initialize(d3d->GetDevice(), hWnd))
+	{
+		MessageBox(hWnd, L"Could not initialize the shader obeject.", L"Error", MB_OK);
+		return false;
+	}
+
+	colorShader = new ColorShaderClass;
+	if (!colorShader)
+		return false;
+
+	if (!colorShader->Initialize(d3d->GetDevice(), hWnd))
 	{
 		MessageBox(hWnd, L"Could not initialize the shader obeject.", L"Error", MB_OK);
 		return false;
@@ -101,6 +118,13 @@ void GraphicsClass::Shutdown()
 		shader = nullptr;
 	}
 
+	if (colorShader)
+	{
+		colorShader->Shutdown();
+		delete colorShader;
+		colorShader = nullptr;
+	}
+
 	if (voxel)
 	{
 		voxel->Shutdown();
@@ -114,6 +138,13 @@ void GraphicsClass::Shutdown()
 	//	delete model;
 	//	model = nullptr;
 	//}
+
+	if (line)
+	{
+		line->Shutdown();
+		delete line;
+		line = nullptr;
+	}
 
 	if (text)
 	{
@@ -142,10 +173,19 @@ void GraphicsClass::Shutdown()
 	}
 }
 
+XMFLOAT3 prevPos = XMFLOAT3(0.f, 0.f, 0.f);
+
 bool GraphicsClass::Frame(int x, int y)
 {
 	if (!text->SetMousePosition(x, y, d3d->GetDeviceContext()))
 		return false;
+
+	XMFLOAT3 currPos = camera->GetPosition();
+	//if (prevPos != currPos)
+	{
+		voxel->Update();
+	}
+	prevPos = currPos;
 
 	return true;
 }
@@ -224,13 +264,22 @@ bool GraphicsClass::Render()
 	params.SetParam("light", light);
 #pragma endregion
 
-	// Bind vertex buffer, index buffer to pipeline to draw
-	//model->Render(d3d->GetDeviceContext());
-	voxel->Render(d3d->GetDeviceContext());
 
 	// Render model by using shader
 	//if (!shader->Render(d3d->GetDeviceContext(), model->GetIndexCount(), world, view, proj, model->GetTexture()))
-	if (!shader->Render(d3d->GetDeviceContext(), voxel->GetIndexCount(), params, voxel->GetTexture()))
+	for (int i = 0; i < 64; ++i)
+	{
+		// Bind vertex buffer, index buffer to pipeline to draw
+		//model->Render(d3d->GetDeviceContext());
+		voxel->Render(d3d->GetDeviceContext(), i);
+
+		if (!shader->Render(d3d->GetDeviceContext(), voxel->subChunks[i].mesh->GetIndexCount(), params, voxel->subChunks[i].mesh->GetTexture()))
+			return false;
+	}
+
+	line->Initialize(d3d->GetDevice());
+	line->Render(d3d->GetDeviceContext());
+	if (!colorShader->Render(d3d->GetDeviceContext(), line->GetIndexCount(), world, view, proj))
 		return false;
 
 	// Turn off Z buffer to draw 2D
