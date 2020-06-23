@@ -673,8 +673,15 @@ bool Voxel::RayCast(Ray3D& ray, XMFLOAT3 &out)
 	int stepY = (ray.direction.y >= 0) ? 1 : -1;
 	int stepZ = (ray.direction.z >= 0) ? 1 : -1;
 
-	//minPos = XMFLOAT3(minPos.x + cellSize * stepX / 2.f, minPos.y + cellSize * stepY / 2.f, minPos.z + cellSize * stepZ / 2.f);
-	//maxPos = XMFLOAT3(maxPos.x - cellSize * stepX / 2.f, maxPos.y - cellSize * stepY / 2.f, maxPos.z - cellSize * stepZ / 2.f);
+	if (!IsInsideCube(chunkBounds, ray.origin))
+	{
+		minPos = XMFLOAT3(minPos.x + cellSize * stepX / 2.f, minPos.y + cellSize * stepY / 2.f, minPos.z + cellSize * stepZ / 2.f);
+	}
+	else
+	{
+		minPos = ray.origin;
+	}
+	maxPos = XMFLOAT3(maxPos.x - cellSize * stepX / 2.f, maxPos.y - cellSize * stepY / 2.f, maxPos.z - cellSize * stepZ / 2.f);
 
 	XMUINT3 current = WorldPositionToLocalIndex(minPos);
 	XMUINT3 last = WorldPositionToLocalIndex(maxPos);
@@ -724,7 +731,7 @@ bool Voxel::RayCast(Ray3D& ray, XMFLOAT3 &out)
 		}
 		if (current.x >= chunkSize || current.y >= chunkSize || current.z >= chunkSize)
 			break;
-		if (Distance(ray.origin, GetCenterPositionFromIndex(current)) > ray.length)
+		if (Distance(ray.origin, GetCenterPositionFromIndex(current)) > (ray.length * 2))
 			break;
 
 		unsigned char bitFlag = GetVoxelBitFlag(current);
@@ -1674,7 +1681,7 @@ void Voxel::PathOptimization(std::vector<XMFLOAT3>& path)
 		XMFLOAT3 origin = start;
 		XMFLOAT3 target = *(i + 1);
 
-		Ray3D ray(origin + XMFLOAT3(0.f, 0.f, 0.f), target + XMFLOAT3(0.f, 0.f, 0.f));
+		Ray3D ray(origin + XMFLOAT3(0.f, 0.5f, 0.f), target + XMFLOAT3(0.f, 0.5f, 0.f));
 
 		XMFLOAT3 out = XMFLOAT3(0, 0, 0);
 		unsigned char downFlag = GetVoxelBitFlag(WorldPositionToLocalIndex(target) - XMUINT3(0, 1, 0));

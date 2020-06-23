@@ -106,4 +106,13 @@ namespace MathHelper
 	{
 		return XMFLOAT3(lhs.x, lhs.y, lhs.z);
 	}
+
+	static bool IsInsideCube(XMFLOAT3* const & bounds, const XMFLOAT3 position)
+	{
+		if (position.x < bounds[0].x || position.x > bounds[1].x
+			|| position.y < bounds[0].y || position.y > bounds[1].y
+			|| position.z < bounds[0].z || position.z > bounds[1].z)
+			return false;
+		return true;
+	}
 };
