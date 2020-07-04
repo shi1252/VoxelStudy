@@ -649,9 +649,10 @@ void Voxel::SetVoxelVertex(XMUINT3 pos, float threshold)
 		{
 			for (int k = -1; k < 1; ++k)
 			{
-				changed.insert(Clamp(((pos.x + k) / chunkDelta), 0u, 4u) +
-					Clamp(((pos.y + j) / chunkDelta), 0u, 4u) +
-					Clamp(((pos.z + i) / chunkDelta), 0u, 4u));
+				//changed.insert(i * 16 + j * 4 + k);
+				changed.insert(Clamp(((pos.x + k) / chunkDelta), 0u, 3u) +
+					Clamp(((pos.y + j) / chunkDelta), 0u, 3u) * 4u +
+					Clamp(((pos.z + i) / chunkDelta), 0u, 3u) * 16u);
 			}
 		}
 	}
@@ -850,7 +851,7 @@ unsigned short Voxel::GetTransVoxelBitFlag(XMUINT3 pos, UCHAR face, const int& l
 UCHAR Voxel::GetTransVoxelFace(UINT index)
 {
 	UCHAR result = 0;
-	return result;
+	//return result;
 	UINT x = index & 0b11, y = (index >> 2) & 0b11, z = (index >> 4) & 0b11;
 
 	// Back face
@@ -1073,14 +1074,14 @@ void Voxel::GetTransVoxelIAThreadPool()//std::vector<MeshClass::VertexType>& ver
 				XMUINT3 currIndex = (start + end) / 2;
 				XMFLOAT3 currPosition = GetCenterPositionFromIndex(currIndex);
 				float distance = Distance(CameraClass::mainCam->GetPosition(), currPosition);
-				int lodLevel = Clamp((int)(distance / 50.f), (int)LOD0, (int)LOD3);
+				int lodLevel = Clamp((int)(distance / 70.f), (int)LOD0, (int)LOD3);
 				if (init || subChunks[i * 16 + j * 4 + k].lodLevel != lodLevel)
 				{
 					subChunks[i * 16 + j * 4 + k].lodLevel = lodLevel;
 					subChunks[i * 16 + j * 4 + k].min = start;
 					subChunks[i * 16 + j * 4 + k].max = end;
 					changed.insert(i * 16 + j * 4 + k);// .push_back(i * 16 + j * 4 + k);
-					lodChanged = true;
+					//lodChanged = true;
 				}
 				start.x += delta;
 				end.x += delta;
@@ -1121,7 +1122,7 @@ void Voxel::GetTransVoxelIAThreadPool()//std::vector<MeshClass::VertexType>& ver
 		}
 		else
 		{
-			for (int i = 0; i < 64; ++i)
+			for (auto&& i : changed)//for (int i = 0; i < 64; ++i)
 			{
 				results.emplace_back(
 					pool->Enqueue(
@@ -1392,145 +1393,169 @@ void Voxel::GetTransVoxelIATask(std::vector<MeshClass::VertexType>& vertices, st
 		{
 			for (int x = start.x; x < end.x; x += delta)
 			{
-				std::unordered_map<int, int> vertList;
 				std::vector<int> idxList;
 
-				//if (lodLevel == 0 || (x > 0 && x < (end.x - delta)) || (y > 0 && y < (end.y - delta)) || (z > 0 && z < (end.z - delta)))
+				//if (subChunks[subChunkIndex].lodLevel == 0 || ((x > start.x && x < (end.x - delta)) && (y > start.y && y < (end.y - delta)) && (z > start.z && z < (end.z - delta))))
 				{
-					unsigned char bitFlag = GetVoxelBitFlag(XMUINT3(x, y, z), subChunks[subChunkIndex].lodLevel);
-					if (edgeTable[bitFlag] == 0)
-					{
-						voxels[x + y * chunkSize + z * chunkSize * chunkSize].type = NONE;
-						continue;
-					}
-
-					RegularCellData rcd = regularCellData[regularCellClass[bitFlag]];
-					int vc = rcd.GetVertexCount();
-					int tc = rcd.GetTriangleCount();
-
-					std::vector<unsigned char> vd;
-					for (int i = 0; i < vc; ++i)
-					{
-						vd.push_back(regularVertexData[bitFlag][i]);
-					}
-
-					//int mask = (x >= 0 ? 1 : 0) | (z >= 0 ? 2 : 0) | (y >= 0 ? 4 : 0);
-					for (int i = 0; i < vc; ++i)
-					{
-						int d = (vd[i] & 0xFF);
-						int d0 = d >> 4;
-						int d1 = d & 0x0F;
-
-						//int r = vd[i] >> 8;
-						//int direction = r >> 4;
-						//int index = r & 0x0F;
-
-						//int nIndex = -1;
-						//bool p = (direction & mask) == direction;
-
-						XMUINT3 p0 = XMUINT3(x + vertexOffset[d0][0] * delta, y + vertexOffset[d0][1] * delta, z + vertexOffset[d0][2] * delta);
-						XMUINT3 p1 = XMUINT3(x + vertexOffset[d1][0] * delta, y + vertexOffset[d1][1] * delta, z + vertexOffset[d1][2] * delta);
-
-						float t0 = GetVoxelVertex(p0);
-						float t1 = GetVoxelVertex(p1);
-						//if (t0 < 0.1f && t0 > 0.f)
-						//	float a = 4;
-						float interpt = (0.f - t0) / (t1 - t0);
-						idxList.push_back(vertices.size());
-						vertices.push_back(VertexInterp(p0, p1, interpt));
-					}
-
-					for (int i = 0; i < tc; ++i)
-					{
-						int t = i * 3;
-						indices.push_back(idxList[rcd.vertexIndex[t]]);
-						indices.push_back(idxList[rcd.vertexIndex[t + 1]]);
-						indices.push_back(idxList[rcd.vertexIndex[t + 2]]);
-
-						vertices[idxList[rcd.vertexIndex[t]]].uv = XMFLOAT2(0.f, 1.f);
-						vertices[idxList[rcd.vertexIndex[t + 1]]].uv = XMFLOAT2(0.5f, 0.f);
-						vertices[idxList[rcd.vertexIndex[t + 2]]].uv = XMFLOAT2(1.f, 1.f);
-
-						XMFLOAT3 normal = MathHelper::NormalVector(vertices[idxList[rcd.vertexIndex[t]]].position, vertices[idxList[rcd.vertexIndex[t + 1]]].position, vertices[idxList[rcd.vertexIndex[t + 2]]].position);
-						//float angle = XMVector3AngleBetweenVectors(XMVectorSet(0.f, 1.f, 0.f, 0.f), XMLoadFloat3(&normal)).m128_f32[0];
-						//angle = Rad2Deg(angle);
-						//if (angle < 50.f)
-						//	voxels[x + y * chunkSize + z * chunkSize * chunkSize].type = LAND;
-						//else if (angle > 90.f)
-						//	voxels[x + y * chunkSize + z * chunkSize * chunkSize].type = NONE;
-						vertices[idxList[rcd.vertexIndex[t]]].normal += normal;
-						vertices[idxList[rcd.vertexIndex[t + 1]]].normal += normal;
-						vertices[idxList[rcd.vertexIndex[t + 2]]].normal += normal;
-					}
+					RegularCell(vertices, indices, subChunkIndex, XMUINT3(x, y, z));
 				}
 				//else
-				if (!(subChunks[subChunkIndex].lodLevel == 0 || (x > 0 && x < (end.x - delta)) || (y > 0 && y < (end.y - delta)) || (z > 0 && z < (end.z - delta))))
+				//if (!(subChunks[subChunkIndex].lodLevel == 0 || (x > 0 && x < (end.x - delta)) || (y > 0 && y < (end.y - delta)) || (z > 0 && z < (end.z - delta))))
 				{
 					UCHAR face = GetTransVoxelFace(subChunkIndex);
-					for (int i = 0; i < 6; ++i)
+					if (face > 0)
 					{
-						if (face & (1 << i))
+						int drawCount = 0;
+						for (int j = 0; j < 6; ++j)
 						{
-							unsigned char bitFlag = GetTransVoxelBitFlag(XMUINT3(x, y, z), i, subChunks[subChunkIndex].lodLevel);
-							if (transitionCellClass[bitFlag] == 0) continue;
-
-							TransitionCellData tcd = transitionCellData[transitionCellClass[bitFlag] & 0x7F];
-							int vc = tcd.GetVertexCount();
-							int tc = tcd.GetTriangleCount();
-
-							std::vector<unsigned char> vd;
-							for (int i = 0; i < vc; ++i)
+							if (face & (1 << j))
 							{
-								vd.push_back(transitionVertexData[bitFlag][i]);
-							}
-
-							//int mask = (x >= 0 ? 1 : 0) | (z >= 0 ? 2 : 0) | (y >= 0 ? 4 : 0);
-							for (int i = 0; i < vc; ++i)
-							{
-								int d = (vd[i] & 0xFF);
-								int d0 = d >> 4;
-								int d1 = d & 0x0F;
-
-								//int r = vd[i] >> 8;
-								//int direction = r >> 4;
-								//int index = r & 0x0F;
-
-								//int nIndex = -1;
-								//bool p = (direction & mask) == direction;
-
-								XMUINT3 p0 = XMFLOAT3ToXMUINT3(XMFLOAT3(x, y, z) + transVertexOffset[i][d0] * delta);
-								XMUINT3 p1 = XMFLOAT3ToXMUINT3(XMFLOAT3(x, y, z) + transVertexOffset[i][d1] * delta);
-
-								float t0 = GetVoxelVertex(p0);
-								float t1 = GetVoxelVertex(p1);
-								//if (t0 < 0.1f && t0 > 0.f)
-								//	float a = 4;
-								float interpt = (0.f - t0) / (t1 - t0);
-								idxList.push_back(vertices.size());
-								vertices.push_back(VertexInterp(p0, p1, interpt));
-							}
-
-							for (int i = 0; i < tc; ++i)
-							{
-								int t = i * 3;
-								indices.push_back(idxList[tcd.vertexIndex[t]]);
-								indices.push_back(idxList[tcd.vertexIndex[t + 1]]);
-								indices.push_back(idxList[tcd.vertexIndex[t + 2]]);
-
-								vertices[idxList[tcd.vertexIndex[t]]].uv = XMFLOAT2(0.f, 1.f);
-								vertices[idxList[tcd.vertexIndex[t + 1]]].uv = XMFLOAT2(0.5f, 0.f);
-								vertices[idxList[tcd.vertexIndex[t + 2]]].uv = XMFLOAT2(1.f, 1.f);
-
-								XMFLOAT3 normal = MathHelper::NormalVector(vertices[idxList[tcd.vertexIndex[t]]].position, vertices[idxList[tcd.vertexIndex[t + 1]]].position, vertices[idxList[tcd.vertexIndex[t + 2]]].position);
-								vertices[idxList[tcd.vertexIndex[t]]].normal += normal;
-								vertices[idxList[tcd.vertexIndex[t + 1]]].normal += normal;
-								vertices[idxList[tcd.vertexIndex[t + 2]]].normal += normal;
+								TransCell(vertices, indices, subChunkIndex, XMUINT3(x, y, z), j, drawCount);
 							}
 						}
+						//if (drawCount == 0)
+						//	RegularCell(vertices, indices, subChunkIndex, XMUINT3(x, y, z));
 					}
+					//else
+					//{
+					//	RegularCell(vertices, indices, subChunkIndex, XMUINT3(x, y, z));
+					//}
 				}
 			}
 		}
+	}
+}
+
+void Voxel::RegularCell(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices, const UINT& subChunkIndex, const XMUINT3& indexPos)
+{
+	std::vector<int> idxList;
+	int delta = pow(2, subChunks[subChunkIndex].lodLevel);
+
+	unsigned char bitFlag = GetVoxelBitFlag(indexPos, subChunks[subChunkIndex].lodLevel);
+	if (edgeTable[bitFlag] == 0)
+	{
+		voxels[indexPos.x + indexPos.y * chunkSize + indexPos.z * chunkSize * chunkSize].type = NONE;
+		return;
+	}
+
+	RegularCellData rcd = regularCellData[regularCellClass[bitFlag]];
+	int vc = rcd.GetVertexCount();
+	int tc = rcd.GetTriangleCount();
+
+	std::vector<unsigned char> vd;
+	for (int i = 0; i < vc; ++i)
+	{
+		vd.push_back(regularVertexData[bitFlag][i]);
+	}
+
+	//int mask = (x >= 0 ? 1 : 0) | (z >= 0 ? 2 : 0) | (y >= 0 ? 4 : 0);
+	for (int i = 0; i < vc; ++i)
+	{
+		int d = (vd[i] & 0xFF);
+		int d0 = d >> 4;
+		int d1 = d & 0x0F;
+
+		//int r = vd[i] >> 8;
+		//int direction = r >> 4;
+		//int index = r & 0x0F;
+
+		//int nIndex = -1;
+		//bool p = (direction & mask) == direction;
+
+		XMUINT3 p0 = XMUINT3(indexPos.x + vertexOffset[d0][0] * delta, indexPos.y + vertexOffset[d0][1] * delta, indexPos.z + vertexOffset[d0][2] * delta);
+		XMUINT3 p1 = XMUINT3(indexPos.x + vertexOffset[d1][0] * delta, indexPos.y + vertexOffset[d1][1] * delta, indexPos.z + vertexOffset[d1][2] * delta);
+
+		float t0 = GetVoxelVertex(p0);
+		float t1 = GetVoxelVertex(p1);
+		//if (t0 < 0.1f && t0 > 0.f)
+		//	float a = 4;
+		float interpt = (0.f - t0) / (t1 - t0);
+		idxList.push_back(vertices.size());
+		vertices.push_back(VertexInterp(p0, p1, interpt));
+	}
+
+	for (int i = 0; i < tc; ++i)
+	{
+		int t = i * 3;
+		indices.push_back(idxList[rcd.vertexIndex[t]]);
+		indices.push_back(idxList[rcd.vertexIndex[t + 1]]);
+		indices.push_back(idxList[rcd.vertexIndex[t + 2]]);
+
+		vertices[idxList[rcd.vertexIndex[t]]].uv = XMFLOAT2(0.f, 1.f);
+		vertices[idxList[rcd.vertexIndex[t + 1]]].uv = XMFLOAT2(0.5f, 0.f);
+		vertices[idxList[rcd.vertexIndex[t + 2]]].uv = XMFLOAT2(1.f, 1.f);
+
+		XMFLOAT3 normal = MathHelper::NormalVector(vertices[idxList[rcd.vertexIndex[t]]].position, vertices[idxList[rcd.vertexIndex[t + 1]]].position, vertices[idxList[rcd.vertexIndex[t + 2]]].position);
+		vertices[idxList[rcd.vertexIndex[t]]].normal += normal;
+		vertices[idxList[rcd.vertexIndex[t + 1]]].normal += normal;
+		vertices[idxList[rcd.vertexIndex[t + 2]]].normal += normal;
+	}
+}
+
+void Voxel::TransCell(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices, const UINT& subChunkIndex, const XMUINT3& indexPos, const int& face, int& drawCount)
+{
+	unsigned short bitFlag = GetTransVoxelBitFlag(indexPos, face, subChunks[subChunkIndex].lodLevel);
+	if ((transitionCellClass[bitFlag] & 0x7F) == 0)
+	{
+		//RegularCell(vertices, indices, subChunkIndex, indexPos);
+		return;
+	}
+
+	drawCount++;
+	std::vector<int> idxList;
+	int delta = pow(2, subChunks[subChunkIndex].lodLevel);
+
+	int inv = (transitionCellClass[bitFlag] & 128) ? 1 : -1;
+	TransitionCellData tcd = transitionCellData[transitionCellClass[bitFlag] & 0x7F];
+	int vc = tcd.GetVertexCount();
+	int tc = tcd.GetTriangleCount();
+
+	std::vector<unsigned char> vd;
+	for (int i = 0; i < vc; ++i)
+	{
+		vd.push_back(transitionVertexData[bitFlag][i]);
+	}
+
+	//int mask = (x >= 0 ? 1 : 0) | (z >= 0 ? 2 : 0) | (y >= 0 ? 4 : 0);
+	for (int i = 0; i < vc; ++i)
+	{
+		int d = (vd[i] & 0xFF);
+		int d0 = d >> 4;
+		int d1 = d & 0x0F;
+
+		//int r = vd[i] >> 8;
+		//int direction = r >> 4;
+		//int index = r & 0x0F;
+
+		//int nIndex = -1;
+		//bool p = (direction & mask) == direction;
+
+		XMUINT3 p0 = XMFLOAT3ToXMUINT3(XMUINT3ToXMFLOAT3(indexPos) + transVertexOffset[face][d0] * delta);
+		XMUINT3 p1 = XMFLOAT3ToXMUINT3(XMUINT3ToXMFLOAT3(indexPos) + transVertexOffset[face][d1] * delta);
+		float t0 = GetVoxelVertex(p0);
+		float t1 = GetVoxelVertex(p1);
+		//if (t0 < 0.1f && t0 > 0.f)
+		//	float a = 4;
+		float interpt = (0.f - t0) / (t1 - t0);
+		idxList.push_back(vertices.size());
+		vertices.push_back(VertexInterp(p0, p1, interpt));
+	}
+
+	for (int i = 0; i < tc; ++i)
+	{
+		int t = i * 3;
+		indices.push_back(idxList[tcd.vertexIndex[t + 1 + inv]]);
+		indices.push_back(idxList[tcd.vertexIndex[t + 1]]);
+		indices.push_back(idxList[tcd.vertexIndex[t + 1 - inv]]);
+
+		vertices[idxList[tcd.vertexIndex[t + 1 + inv]]].uv = XMFLOAT2(0.f, 1.f);
+		vertices[idxList[tcd.vertexIndex[t + 1]]].uv = XMFLOAT2(0.5f, 0.f);
+		vertices[idxList[tcd.vertexIndex[t + 1 - inv]]].uv = XMFLOAT2(1.f, 1.f);
+
+		XMFLOAT3 normal = MathHelper::NormalVector(vertices[idxList[tcd.vertexIndex[t + 1 + inv]]].position, vertices[idxList[tcd.vertexIndex[t + 1]]].position, vertices[idxList[tcd.vertexIndex[t + 1 - inv]]].position);
+		vertices[idxList[tcd.vertexIndex[t + 1 + inv]]].normal += normal;
+		vertices[idxList[tcd.vertexIndex[t + 1]]].normal += normal;
+		vertices[idxList[tcd.vertexIndex[t + 1 - inv]]].normal += normal;
 	}
 }
 

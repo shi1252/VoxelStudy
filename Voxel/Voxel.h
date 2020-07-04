@@ -203,6 +203,8 @@ private:
 	void GetTransVoxelIATask(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices, int startX, int endX);
 	void GetTransVoxelIATask(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices, XMUINT3 start, XMUINT3 end, int lodLevel);
 	void GetTransVoxelIATask(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices, UINT subChunkIndex);
+	void RegularCell(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices, const UINT& subChunkIndex, const XMUINT3& indexPos);
+	void TransCell(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices, const UINT& subChunkIndex, const XMUINT3& indexPos, const int& face, int& drawCount);
 	XMUINT3 WorldPositionToLocalIndex(const XMFLOAT3& position);
 	//bool LoadVoxelToBuffers(VertexType *vertices, int *indices);
 
