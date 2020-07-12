@@ -787,7 +787,7 @@ UINT Voxel::VertexPositionToArrayKey(const XMUINT3& pos)
 
 XMFLOAT3 Voxel::GetCenterPositionFromIndex(const XMUINT3& index)
 {
-	return XMFLOAT3(position.x + index.x * cellSize * 0.5f, position.y + index.y * cellSize * 0.5f, position.z + index.z * cellSize * 0.5f);
+	return XMFLOAT3(position.x + index.x * cellSize + cellSize * 0.5f, position.y + index.y * cellSize + cellSize * 0.5f, position.z + index.z * cellSize + cellSize * 0.5f);
 }
 
 //Voxel::VertexType Voxel::VertexInterp(const XMUINT3& v0, const int edge, float threshold0)
