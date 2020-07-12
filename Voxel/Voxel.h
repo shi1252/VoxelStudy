@@ -196,7 +196,7 @@ private:
 	MeshClass::VertexType VertexInterp(const XMUINT3& v0, const XMUINT3& v1, float threshold0);
 	unsigned char GetVoxelBitFlag(XMUINT3 pos, const int& lodLevel = 0);
 	unsigned short GetTransVoxelBitFlag(XMUINT3 pos, UCHAR face, const int& lodLevel);
-	UCHAR GetTransVoxelFace(UINT index);
+	UCHAR GetTransVoxelFace(UINT index, bool inverse = false);
 	void GetVoxelIA(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices);
 	void GetTransVoxelIA(std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices);
 	void GetTransVoxelIAThreadPool();//std::vector<MeshClass::VertexType>& vertices, std::vector<int>& indices);

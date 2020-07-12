@@ -849,68 +849,135 @@ unsigned short Voxel::GetTransVoxelBitFlag(XMUINT3 pos, UCHAR face, const int& l
 	return bitFlag;
 }
 
-UCHAR Voxel::GetTransVoxelFace(UINT index)
+XMINT3 facePositionData[6] = {
+	XMINT3(0,0,-1),XMINT3(0,0,1),
+	XMINT3(-1,0,0),XMINT3(1,0,0),
+	XMINT3(0,-1,0),XMINT3(0,1,0)
+};
+UCHAR Voxel::GetTransVoxelFace(UINT index, bool inverse)
 {
 	UCHAR result = 0;
 	//return result;
 	UINT x = index & 0b11, y = (index >> 2) & 0b11, z = (index >> 4) & 0b11;
 
-	// Back face
-	if (z > 0)
+	if (!inverse)
 	{
-		UINT newX = x;
-		UINT newY = y;
-		UINT newZ = z - 1;
-		if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
-			result |= 1 << 0;
-	}
-	// Front face
-	if (z < 3)
-	{
-		UINT newX = x;
-		UINT newY = y;
-		UINT newZ = z + 1;
-		if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
-			result |= 1 << 1;
-	}
-	// Left
-	if (x > 0)
-	{
-		UINT newX = x - 1;
-		UINT newY = y;
-		UINT newZ = z;
-		if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
-			result |= 1 << 2;
-	}
-	// Right
-	if (x < 3)
-	{
-		UINT newX = x + 1;
-		UINT newY = y;
-		UINT newZ = z;
-		if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
-			result |= 1 << 3;
-	}
-	// Down
-	if (y > 0)
-	{
-		UINT newX = x;
-		UINT newY = y - 1;
-		UINT newZ = z;
-		if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
-			result |= 1 << 4;
-	}
-	// Up
-	if (y < 3)
-	{
-		UINT newX = x;
-		UINT newY = y + 1;
-		UINT newZ = z;
-		if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
-			result |= 1 << 5;
-	}
+		// Back face
+		if (z > 0)
+		{
+			UINT newX = x;
+			UINT newY = y;
+			UINT newZ = z - 1;
+			if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 0;
+		}
+		// Front face
+		if (z < 3)
+		{
+			UINT newX = x;
+			UINT newY = y;
+			UINT newZ = z + 1;
+			if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 1;
+		}
+		// Left
+		if (x > 0)
+		{
+			UINT newX = x - 1;
+			UINT newY = y;
+			UINT newZ = z;
+			if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 2;
+		}
+		// Right
+		if (x < 3)
+		{
+			UINT newX = x + 1;
+			UINT newY = y;
+			UINT newZ = z;
+			if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 3;
+		}
+		// Down
+		if (y > 0)
+		{
+			UINT newX = x;
+			UINT newY = y - 1;
+			UINT newZ = z;
+			if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 4;
+		}
+		// Up
+		if (y < 3)
+		{
+			UINT newX = x;
+			UINT newY = y + 1;
+			UINT newZ = z;
+			if (subChunks[index].lodLevel > subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 5;
+		}
 
-	return result;
+		return result;
+	}
+	else
+	{
+		// Back face
+		if (z > 0)
+		{
+			UINT newX = x;
+			UINT newY = y;
+			UINT newZ = z - 1;
+			if (subChunks[index].lodLevel < subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 0;
+		}
+		// Front face
+		if (z < 3)
+		{
+			UINT newX = x;
+			UINT newY = y;
+			UINT newZ = z + 1;
+			if (subChunks[index].lodLevel < subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 1;
+		}
+		// Left
+		if (x > 0)
+		{
+			UINT newX = x - 1;
+			UINT newY = y;
+			UINT newZ = z;
+			if (subChunks[index].lodLevel < subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 2;
+		}
+		// Right
+		if (x < 3)
+		{
+			UINT newX = x + 1;
+			UINT newY = y;
+			UINT newZ = z;
+			if (subChunks[index].lodLevel < subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 3;
+		}
+		// Down
+		if (y > 0)
+		{
+			UINT newX = x;
+			UINT newY = y - 1;
+			UINT newZ = z;
+			if (subChunks[index].lodLevel < subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 4;
+		}
+		// Up
+		if (y < 3)
+		{
+			UINT newX = x;
+			UINT newY = y + 1;
+			UINT newZ = z;
+			if (subChunks[index].lodLevel < subChunks[newZ * 16 + newY * 4 + newX].lodLevel)
+				result |= 1 << 5;
+		}
+
+		return result;
+	}
 }
 
 /// <summary>
@@ -1092,6 +1159,24 @@ void Voxel::GetTransVoxelIAThreadPool()//std::vector<MeshClass::VertexType>& ver
 		}
 		start.z += delta;
 		end.z += delta;
+	}
+
+	for (auto&& i : changed)
+	{
+		UCHAR face = GetTransVoxelFace(i, true);
+		if (face > 0)
+		{
+			for (int q = 0; q < 6; ++q)
+			{
+				if (face & (1 << q))
+				{
+					UINT x = i & 0b11, y = (i >> 2) & 0b11, z = (i >> 4) & 0b11;
+					XMUINT3 index(x, y, z);
+					index += facePositionData[q];
+					changed.insert(index.z * 16 + index.y * 4 + index.x);
+				}
+			}
+		}
 	}
 
 	if (lodChanged || dirtyFlag)
@@ -1401,7 +1486,7 @@ void Voxel::GetTransVoxelIATask(std::vector<MeshClass::VertexType>& vertices, st
 					RegularCell(vertices, indices, subChunkIndex, XMUINT3(x, y, z));
 				}
 				//else
-				//if (!(subChunks[subChunkIndex].lodLevel == 0 || (x > 0 && x < (end.x - delta)) || (y > 0 && y < (end.y - delta)) || (z > 0 && z < (end.z - delta))))
+				if (!(subChunks[subChunkIndex].lodLevel == 0))// || (x > 0 && x < (end.x - delta)) || (y > 0 && y < (end.y - delta)) || (z > 0 && z < (end.z - delta))))
 				{
 					UCHAR face = GetTransVoxelFace(subChunkIndex);
 					if (face > 0)

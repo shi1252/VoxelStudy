@@ -83,7 +83,7 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 	}
 
 	// Create Voxel
-	voxel = new Voxel(XMFLOAT3(-50, -100, 0), 128, 1.f);
+	voxel = new Voxel(XMFLOAT3(-50, -100, 0), 128, 0.5f);
 	if (!voxel)
 		return false;
 
