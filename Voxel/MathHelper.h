@@ -45,6 +45,11 @@ namespace MathHelper
 		return result;
 	}
 
+	static float Dot(const XMFLOAT3& v0, const XMFLOAT3& v1)
+	{
+		return (v0.x * v1.x + v0.y * v1.y + v0.z * v1.z);
+	}
+
 	inline XMFLOAT3 operator+=(XMFLOAT3& lhs, const XMFLOAT3& rhs)
 	{
 		lhs = XMFLOAT3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);

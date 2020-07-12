@@ -13,7 +13,7 @@ void VoxelShaderClass::Shutdown()
 	ShutdownShader();
 }
 
-bool VoxelShaderClass::Render(ID3D11DeviceContext* context, int indexCount, ShaderParameter& params, ID3D11ShaderResourceView* texture)
+bool VoxelShaderClass::Render(ID3D11DeviceContext* context, int indexCount, ShaderParameter& params, ID3D11ShaderResourceView** texture)
 {
 	if (!SetShaderParameters(context, params, texture))
 		return false;
@@ -191,7 +191,7 @@ void VoxelShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMsg, HWND hwnd,
 	MessageBox(hwnd, L"Error compiling shader.", fileName, MB_OK);
 }
 
-bool VoxelShaderClass::SetShaderParameters(ID3D11DeviceContext* context, ShaderParameter& params, ID3D11ShaderResourceView* texture)
+bool VoxelShaderClass::SetShaderParameters(ID3D11DeviceContext* context, ShaderParameter& params, ID3D11ShaderResourceView** texture)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 
@@ -253,7 +253,7 @@ bool VoxelShaderClass::SetShaderParameters(ID3D11DeviceContext* context, ShaderP
 	context->PSSetConstantBuffers(0, 1, &lightBuffer);
 
 	// Set texture resource of ps
-	context->PSSetShaderResources(0, 1, &texture);
+	context->PSSetShaderResources(0, 4, texture);
 
 	return true;
 }

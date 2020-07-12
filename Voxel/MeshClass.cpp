@@ -1,5 +1,7 @@
 #include "MeshClass.h"
 #include "TargaTextureClass.h"
+#include "TextureClass.h"
+#include "GraphicsClass.h"
 
 bool MeshClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* context, LPCSTR fileName)
 {
@@ -123,12 +125,21 @@ void MeshClass::RenderBuffers(ID3D11DeviceContext* context)
 bool MeshClass::LoadTexture(ID3D11Device* device, ID3D11DeviceContext* context, LPCSTR fileName)
 {
 	// Create texture object
-	texture = new TargaTextureClass;
+	texture = GraphicsClass::GetInstance()->GetTextures(); //new TextureClass[4];
 	if (!texture)
 		return false;
 
+	
+
 	// Initialize texture object
-	return texture->Initialize(device, context, fileName);
+	//if (!texture[0].Initialize(device, L"Texture/Grass.jpg", true))
+	//	return false;
+	//if (!texture[1].Initialize(device, L"Texture/Rock_028_NORM.jpg", true))
+	//	return false;
+	//if (!texture[2].Initialize(device, L"Texture/Rock_028_COLOR.jpg", true))
+	//	return false;
+	//return texture[3].Initialize(device, L"Texture/Rock_028_NORM.jpg", true);//context, fileName);
+	return true;
 }
 
 void MeshClass::CreateSphere(float radius, UINT sliceCount, UINT stackCount)

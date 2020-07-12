@@ -359,6 +359,7 @@ VoxelType voxelTypeTable[256] = {
 Voxel::Voxel(XMFLOAT3 pos, UINT chunkSize, float cellSize)
 	: position(pos), chunkSize(chunkSize), cellSize(cellSize)
 {
+	dirtyFlag = true;
 	chunkBounds[0] = position;
 	chunkBounds[1] = XMFLOAT3(position.x + chunkSize * cellSize, 
 		position.y + chunkSize * cellSize,
@@ -375,30 +376,30 @@ Voxel::Voxel(XMFLOAT3 pos, UINT chunkSize, float cellSize)
 				voxelVertices[x + y * (chunkSize + 1) + z * (chunkSize + 1) * (chunkSize + 1)] = VoxelVertex();
 				if (x < chunkSize && y < chunkSize && z < chunkSize)
 					voxels[x + y * chunkSize + z * chunkSize * chunkSize] = VoxelData();
-				//float noise = perlin.Noise((double)x / (chunkSize + 1) * 0.8, (double)z / (chunkSize + 1) * 0.8, 0.1)* (chunkSize + 1);
-				//if (y < noise)
-				//{
-				//	if ((noise - y) >= 1.f)
-				//		voxelVertices[VertexPositionToArrayKey(XMUINT3(x, y, z))].threshold = 1.f;
-				//	else
-				//		voxelVertices[VertexPositionToArrayKey(XMUINT3(x, y, z))].threshold = (noise - y);
-				//}
+				float noise = perlin.Noise((double)x / (chunkSize + 1) * 0.8, (double)z / (chunkSize + 1) * 0.8, 0.1)* (chunkSize + 1);
+				if (y < noise)
+				{
+					//if ((noise - y) >= 1.f)
+					//	voxelVertices[VertexPositionToArrayKey(XMUINT3(x, y, z))].threshold = 1.f;
+					//else
+						voxelVertices[VertexPositionToArrayKey(XMUINT3(x, y, z))].threshold = (noise - y);
+				}
 			}
 		}
 	}
 
 	//SetVoxelSphere(XMFLOAT3(position) + XMFLOAT3(31.5, 31.5, 31.5), 1.f, true);
 
-	for (int x = 0; x < chunkSize+1; ++x)
-	{
-		for (int y = 0; y < chunkSize+1; ++y)
-		{
-			for (int z = 0; z < chunkSize+1; ++z)
-			{
-				SetVoxelVertex(XMUINT3(x, y, z), (chunkSize / 2.f - (y + 0.f)));
-			}
-		}
-	}
+	//for (int x = 0; x < chunkSize+1; ++x)
+	//{
+	//	for (int y = 0; y < chunkSize+1; ++y)
+	//	{
+	//		for (int z = 0; z < chunkSize+1; ++z)
+	//		{
+	//			SetVoxelVertex(XMUINT3(x, y, z), (chunkSize / 2.f - (y + 0.f)));
+	//		}
+	//	}
+	//}
 
 	// For voxel normal data
 	//for (int i = 0; i < 256; ++i)
@@ -1081,7 +1082,7 @@ void Voxel::GetTransVoxelIAThreadPool()//std::vector<MeshClass::VertexType>& ver
 					subChunks[i * 16 + j * 4 + k].min = start;
 					subChunks[i * 16 + j * 4 + k].max = end;
 					changed.insert(i * 16 + j * 4 + k);// .push_back(i * 16 + j * 4 + k);
-					//lodChanged = true;
+					lodChanged = true;
 				}
 				start.x += delta;
 				end.x += delta;
@@ -1553,6 +1554,7 @@ void Voxel::TransCell(std::vector<MeshClass::VertexType>& vertices, std::vector<
 		vertices[idxList[tcd.vertexIndex[t + 1 - inv]]].uv = XMFLOAT2(1.f, 1.f);
 
 		XMFLOAT3 normal = MathHelper::NormalVector(vertices[idxList[tcd.vertexIndex[t + 1 + inv]]].position, vertices[idxList[tcd.vertexIndex[t + 1]]].position, vertices[idxList[tcd.vertexIndex[t + 1 - inv]]].position);
+		//float dot = MathHelper::Dot(XMFLOAT3(0, -0.707, 0.707), normal);
 		vertices[idxList[tcd.vertexIndex[t + 1 + inv]]].normal += normal;
 		vertices[idxList[tcd.vertexIndex[t + 1]]].normal += normal;
 		vertices[idxList[tcd.vertexIndex[t + 1 - inv]]].normal += normal;

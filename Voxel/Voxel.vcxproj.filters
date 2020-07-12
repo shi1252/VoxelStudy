@@ -108,6 +108,9 @@
     <ClCompile Include="LineClass.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="WICTextureLoader11.cpp">
+      <Filter>Framework\private</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defined.h">
@@ -202,6 +205,9 @@
     </ClInclude>
     <ClInclude Include="LineClass.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="WICTextureLoader11.h">
+      <Filter>Framework\public</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

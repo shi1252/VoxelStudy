@@ -4,7 +4,7 @@
 class LightClass
 {
 public:
-	LightClass() : rotation(XMFLOAT3(45.f, 0.f, 0.f)) {}
+	LightClass() : rotation(XMFLOAT3(45.f, 45.f, 0.f)) {}
 	LightClass(const LightClass&) = delete;
 	~LightClass() = default;
 

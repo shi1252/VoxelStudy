@@ -3,6 +3,7 @@
 #include <vector>
 
 class TargaTextureClass;
+class TextureClass;
 
 class MeshClass
 {
@@ -27,6 +28,7 @@ public:
 
 	int GetIndexCount();
 	ID3D11ShaderResourceView* GetTexture();
+	TextureClass* GetTextureClass() { return texture; }
 	bool LoadTexture(ID3D11Device * device, ID3D11DeviceContext * context, LPCSTR fileName);
 
 	void CreateSphere(float radius, UINT sliceCount, UINT stackCount);
@@ -44,5 +46,5 @@ private:
 	ID3D11Buffer* ib = nullptr;
 	int vCount = 0;
 	int iCount = 0;
-	TargaTextureClass* texture = nullptr;
+	TextureClass* texture = nullptr;
 };

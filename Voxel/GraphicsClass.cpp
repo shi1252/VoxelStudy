@@ -11,11 +11,16 @@
 #include "TextClass.h"
 #include "LineClass.h"
 #include "MathHelper.h"
+#include "TextureClass.h"
 
 using namespace MathHelper;
 
+GraphicsClass* GraphicsClass::instance = nullptr;
+
 bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 {
+	instance = this;
+
 	this->width = width;
 	this->height = height;
 
@@ -30,6 +35,21 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 		MessageBox(hWnd, L"Direct3D initialize error.", L"Error", MB_OK);
 		return false;
 	}
+
+	// Create texture object
+	textures = new TextureClass[4];
+	if (!textures)
+		return false;
+
+	// Initialize texture object
+	if (!textures[0].Initialize(d3d->GetDevice(), L"Texture/Grass.jpg", true))
+		return false;
+	if (!textures[1].Initialize(d3d->GetDevice(), L"Texture/Rock_028_NORM.jpg", true))
+		return false;
+	if (!textures[2].Initialize(d3d->GetDevice(), L"Texture/Rock_028_COLOR.jpg", true))
+		return false;
+	if (!textures[3].Initialize(d3d->GetDevice(), L"Texture/Rock_028_NORM.jpg", true))
+		return false;
 
 	light = new LightClass;
 	if (!light)
@@ -63,7 +83,7 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 	}
 
 	// Create Voxel
-	voxel = new Voxel(XMFLOAT3(-50, -80, 0), 64, 1.f);
+	voxel = new Voxel(XMFLOAT3(-50, -100, 0), 128, 1.f);
 	if (!voxel)
 		return false;
 
@@ -273,7 +293,12 @@ bool GraphicsClass::Render()
 		//model->Render(d3d->GetDeviceContext());
 		voxel->Render(d3d->GetDeviceContext(), i);
 
-		if (!shader->Render(d3d->GetDeviceContext(), voxel->subChunks[i].mesh->GetIndexCount(), params, voxel->subChunks[i].mesh->GetTexture()))
+		ID3D11ShaderResourceView* texture[4] = { nullptr, nullptr, nullptr, nullptr};
+		for (int i=0;i<4;++i)
+		{
+			texture[i] = voxel->subChunks[i].mesh->GetTextureClass()[i].GetTexture();
+		}
+		if (!shader->Render(d3d->GetDeviceContext(), voxel->subChunks[i].mesh->GetIndexCount(), params, texture))//voxel->subChunks[i].mesh->GetTexture()))
 			return false;
 	}
 

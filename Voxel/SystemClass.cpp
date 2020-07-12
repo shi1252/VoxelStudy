@@ -211,7 +211,7 @@ bool SystemClass::Frame()
 	cam->Render();
 	float movespeed = 5.f;
 	if (input->IsKeyDown(DIK_LSHIFT))
-		movespeed = 10.f;
+		movespeed = 50.f;
 	if (input->IsKeyDown(DIK_W))
 		cam->SetPosition(cam->GetPosition().x + cam->forward().x * movespeed * timer.DeltaTime(),
 			cam->GetPosition().y + cam->forward().y * movespeed * timer.DeltaTime(),
@@ -243,7 +243,7 @@ bool SystemClass::Frame()
 	if (input->IsKeyDown(DIK_LCONTROL))
 		draw = false;
 
-	if (input->GetMouseButtonDown(input->LEFT))
+	if (input->GetMouseButtonState(input->LEFT))
 	{
 		XMFLOAT3 origin = cam->GetPosition();//graphics->GetScreenToWorldPoint(mouseX, mouseY, 0.f);
 		XMFLOAT3 target = graphics->GetScreenToWorldPoint(mouseX, mouseY, 1.f);
@@ -252,7 +252,7 @@ bool SystemClass::Frame()
 
 		XMFLOAT3 out = XMFLOAT3(0, 0, 0);
 		if (graphics->GetVoxel()->RayCast(ray, out))
-			graphics->GetVoxel()->SetVoxelSphere(out, .9f, draw);
+			graphics->GetVoxel()->SetVoxelSphere(out, 2.f, draw);
 	}
 
 	if (input->IsKeyDown(DIK_Z))

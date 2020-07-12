@@ -36,14 +36,14 @@ public:
 
 	bool Initialize(ID3D11Device * device, HWND hwnd);
 	void Shutdown();
-	bool Render(ID3D11DeviceContext * context, int indexCount, ShaderParameter& params, ID3D11ShaderResourceView * srv);
+	bool Render(ID3D11DeviceContext * context, int indexCount, ShaderParameter& params, ID3D11ShaderResourceView** srv);
 
 private:
 	bool InitializeShader(ID3D11Device * device, HWND hwnd, LPCWSTR fileName);
 	void ShutdownShader();
 	void OutputShaderErrorMessage(ID3D10Blob * errorMsg, HWND hwnd, LPCWSTR fileName);
 
-	bool SetShaderParameters(ID3D11DeviceContext * context, ShaderParameter& params, ID3D11ShaderResourceView * srv);
+	bool SetShaderParameters(ID3D11DeviceContext * context, ShaderParameter& params, ID3D11ShaderResourceView** srv);
 	void RenderShader(ID3D11DeviceContext * context, int indexCount);
 
 	ID3D11VertexShader* vs = nullptr;

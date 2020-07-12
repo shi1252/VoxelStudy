@@ -16,6 +16,7 @@ class ColorShaderClass;
 class Voxel;
 class TextClass;
 class LineClass;
+class TextureClass;
 
 class GraphicsClass
 {
@@ -36,8 +37,13 @@ public:
 	XMFLOAT3 GetScreenToWorldPoint(int& x, int& y, float z);
 
 	LineClass* line = nullptr;
+	static GraphicsClass* GetInstance() { return instance; }
+
+	TextureClass* GetTextures() { return textures; }
 
 private:
+	static GraphicsClass* instance;
+
 	D3DClass* d3d = nullptr;
 	CameraClass* camera = nullptr;
 	Voxel* voxel = nullptr;
@@ -47,6 +53,8 @@ private:
 	VoxelShaderClass* shader = nullptr;
 	TextClass* text = nullptr;
 	ColorShaderClass* colorShader = nullptr;
+
+	TextureClass* textures;
 
 	int width = 0;
 	int height = 0;

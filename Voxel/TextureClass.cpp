@@ -1,10 +1,17 @@
 #include "TextureClass.h"
 
-bool TextureClass::Initialize(ID3D11Device* device, LPCWSTR fileName)
+bool TextureClass::Initialize(ID3D11Device* device, LPCWSTR fileName, bool WIC)
 {
-	if (FAILED(CreateDDSTextureFromFile(device, fileName, nullptr, &textureView)))
-		return false;
-
+	if (WIC)
+	{
+		if (FAILED(CreateWICTextureFromFile(device, fileName, nullptr, &textureView)))
+			return false;
+	}
+	else
+	{
+		if (FAILED(CreateDDSTextureFromFile(device, fileName, nullptr, &textureView)))
+			return false;
+	}
 	return true;
 }
 

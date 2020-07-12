@@ -13,3 +13,4 @@ using namespace DirectX;
 
 #include "AlignedAllocationPolicy.h"
 #include "DDSTextureLoader.h"
+#include "WICTextureLoader11.h"

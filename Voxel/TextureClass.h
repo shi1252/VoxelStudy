@@ -8,7 +8,7 @@ public:
 	TextureClass(const TextureClass&) = delete;
 	~TextureClass() = default;
 
-	bool Initialize(ID3D11Device* device, LPCWSTR fileName);
+	bool Initialize(ID3D11Device* device, LPCWSTR fileName, bool WIC = false);
 	virtual void Shutdown();
 
 	ID3D11ShaderResourceView* GetTexture();
