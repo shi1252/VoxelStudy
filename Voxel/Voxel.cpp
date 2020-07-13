@@ -388,6 +388,8 @@ Voxel::Voxel(XMFLOAT3 pos, UINT chunkSize, float cellSize)
 		}
 	}
 
+	//SetVoxelSphere(XMFLOAT3(-22.f, -60.f, 45.f), 1.3f, true);
+
 	//SetVoxelSphere(XMFLOAT3(position) + XMFLOAT3(31.5, 31.5, 31.5), 1.f, true);
 
 	//for (int x = 0; x < chunkSize+1; ++x)
@@ -1791,13 +1793,13 @@ void Voxel::PathOptimization(std::vector<XMFLOAT3>& path)
 	for (auto i = path.begin() + 1; i != path.end() - 1; ++i)
 	{
 		XMFLOAT3 origin = start;
-		XMFLOAT3 target = *(i + 1);
+		XMFLOAT3 target = *(i + 0);
 
-		Ray3D ray(origin + XMFLOAT3(0.f, 0.5f, 0.f), target + XMFLOAT3(0.f, 0.5f, 0.f));
+		Ray3D ray(origin + XMFLOAT3(0.f, cellSize * 2.f, 0.f), target + XMFLOAT3(0.f, cellSize * 2.f, 0.f));
 
 		XMFLOAT3 out = XMFLOAT3(0, 0, 0);
 		unsigned char downFlag = GetVoxelBitFlag(WorldPositionToLocalIndex(target) - XMUINT3(0, 1, 0));
-		if (RayCast(ray, out) || (downFlag != 0 && downFlag != 255))
+		if (RayCast(ray, out) || (voxelTypeTable[downFlag] != LAND && (downFlag != 0 && downFlag != 255)))//downFlag != 0 && downFlag != 255))
 		{
 			newPath.push_back(*i);
 			start = (*i);

@@ -283,6 +283,7 @@ bool SystemClass::Frame()
 	{
 		std::vector<XMFLOAT3> path;
 		graphics->GetVoxel()->VoxelAStar(path);
+		graphics->GetVoxel()->PathOptimization(path);
 		for (int i = 0; i < path.size(); ++i)
 		{
 			LineClass::VertexType v = { path[i] + XMFLOAT3(0.f, 1.f, 0.f), XMFLOAT4(1.f, 0.f, 0.f, 1.f) };
