@@ -64,6 +64,7 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 
 	// Set camera position
 	camera->SetPosition(0.f, 0.f, -5.0f);
+	camera->SetRotation(45.0f, -30.0f, 0.0f);
 	//camera->SetPosition(0.f, 0.f, -30.f);
 
 	// Create text
@@ -83,7 +84,7 @@ bool GraphicsClass::Initialize(int width, int height, HWND hWnd)
 	}
 
 	// Create Voxel
-	voxel = new Voxel(XMFLOAT3(-50, -100, 0), 128, 0.5f);
+	voxel = new Voxel(XMFLOAT3(-50, -50, 0), 128, 0.5f);
 	if (!voxel)
 		return false;
 
@@ -249,7 +250,7 @@ XMFLOAT3 GraphicsClass::GetScreenToWorldPoint(int& x, int& y, float z)
 
 	XMVECTOR vec = XMVector4Transform(screenPos, inv);
 	XMVECTOR div = XMVectorSplatW(vec);
-	
+
 	XMStoreFloat3(&pos, XMVectorDivide(vec, div));
 
 	return pos;
@@ -293,8 +294,8 @@ bool GraphicsClass::Render()
 		//model->Render(d3d->GetDeviceContext());
 		voxel->Render(d3d->GetDeviceContext(), i);
 
-		ID3D11ShaderResourceView* texture[4] = { nullptr, nullptr, nullptr, nullptr};
-		for (int i=0;i<4;++i)
+		ID3D11ShaderResourceView* texture[4] = { nullptr, nullptr, nullptr, nullptr };
+		for (int i = 0; i < 4; ++i)
 		{
 			texture[i] = voxel->subChunks[i].mesh->GetTextureClass()[i].GetTexture();
 		}
